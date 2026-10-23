@@ -1,9 +1,11 @@
 package aed.tp2;
-
+// importar el ABB
 public class AirMiles implements SistemaAirMiles {
     private ABB<Integer, Usuario> usuarios;
     private Usuario maxAcumulador;
     private Usuario maxCanjeador;
+    // falta el maxheap 
+    // falta el trie 
     
     private class Usuario implements Comparable<Usuario>{
         int id;
@@ -37,7 +39,7 @@ public class AirMiles implements SistemaAirMiles {
     }
 
     public void registrarUsuarioConReferidor(int id, int ref) {
-        throw new UnsupportedOperationException("Sin implementar");
+        usuarios.insertar(new Usuario(id));
     }
 
     public void acumularMillas(int id, double distancia, String nombrePromo) {
@@ -57,6 +59,15 @@ public class AirMiles implements SistemaAirMiles {
     }
 
     public String consultarCategoria(int id) {
+        int millas = obtener(id).millasTotales;
+        // o poner una variable res e ir cambiando, en realidad no me gustan tantos return
+        if (millas < 10000){
+            return "Bronce";
+        } else if (millas < 50000){
+            return "Platino";
+        } else if (millas < 1000000){
+            return "Oro";
+        } else return "Platino";
        
     }
 
