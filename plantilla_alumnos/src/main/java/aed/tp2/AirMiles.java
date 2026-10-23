@@ -1,14 +1,39 @@
 package aed.tp2;
 
 public class AirMiles implements SistemaAirMiles {
-    /*COMPLETAR*/
+    private ABB<Integer, Usuario> usuarios;
+    private Usuario maxAcumulador;
+    private Usuario maxCanjeador;
+    
+    private class Usuario implements Comparable<Usuario>{
+        int id;
+        int millasDisponibles;
+        int millasTotales;
+        int millasCanjeadas;
+        int millasTransferidas;
 
+        Usuario(int id){
+            this.id = id;
+            this.millasDisponibles = 0;
+            this.millasTotales = 0;
+            this.millasCanjeadas = 0;
+            this.millasTransferidas = 0;
+
+        }
+
+        @Override
+        public int compareTo(Usuario otro) {
+        return Integer.compare(this.id, otro.id);
+    }
+    }
+
+    
     public AirMiles() {
-        throw new UnsupportedOperationException("Sin implementar");
+        usuarios = new ABB<>();
     }
 
     public void registrarUsuario(int id) {
-        throw new UnsupportedOperationException("Sin implementar");
+        usuarios.insertar(new Usuario(id));
     }
 
     public void registrarUsuarioConReferidor(int id, int ref) {
@@ -28,11 +53,11 @@ public class AirMiles implements SistemaAirMiles {
     }
 
     public double consultarSaldo(int id) {
-        throw new UnsupportedOperationException("Sin implementar");
+        return obtener(id).millasDisponibles;
     }
 
     public String consultarCategoria(int id) {
-       throw new UnsupportedOperationException("Sin implementar");
+       
     }
 
     public int[] rankingMillas(int n) {
@@ -52,11 +77,11 @@ public class AirMiles implements SistemaAirMiles {
     }
 
     public int elMasAcumulador() {
-        throw new UnsupportedOperationException("Sin implementar");
+        return maxAcumulador.id;
     }
 
     public int elMasCanjeador() {
-        throw new UnsupportedOperationException("Sin implementar");
+        return maxCanjeador.id;
     }
 
     public int[][] paresTransferidoresExclusivos() {
