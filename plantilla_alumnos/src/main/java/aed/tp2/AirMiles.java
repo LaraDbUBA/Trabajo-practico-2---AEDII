@@ -42,17 +42,72 @@ public class AirMiles implements SistemaAirMiles {
     public void registrarUsuarioConReferidor(int id, int ref) {
         usuarios.insertar(new Usuario(id));
     }
+    private double consultarFactorCategoria(String categoria) {
+        double res = 0.0;
+
+        if (categoria.equals("Bronce")) {
+            res = 1.0;
+        } else if (categoria.equals("Plata")) {
+            res = 1.5;
+        } else if (categoria.equals("Oro")) {
+            res = 2.0;
+        }
+
+        return res;
+    }
+    private String categoriaPorMillas(int millas) {
+        String res;
+
+        if (millas < 10000) {
+            res = "Bronce";
+        } else if (millas < 50000) {
+            res = "Plata";
+        } else if (millas < 1000000) {
+            res = "Oro";
+        } else {
+            res = "Platino";
+        }
+
+        return res;
+    }
 
     public void acumularMillas(int id, double distancia, String nombrePromo) {
-        throw new UnsupportedOperationException("Sin implementar");
+        Usuario u = buscarUsuario(id);
+        String categoria = categoriaPorMillas(u.millasTotales);
+        double factorCategoria = consultarFactorCategoria(categoria);
+        double factor = promociones.obtenerFactor(nombrePromo);
+
+        double millas = distancia * factorCategoria * factor ;
+        u.millasTotales += millas;
+        u.millasDisponibles += millas;
+        
+        if (maxAcumulador == null ||u.millasTotales > maxAcumulador.millasTotales) {
+            maxAcumulador = u;
+        }
+
     }
 
     public void canjearMillas(int id, double cantidad) {
-        throw new UnsupportedOperationException("Sin implementar");
+        Usuario u = buscarUsuario(id);
+        u.millasDisponibles -= cantidad;
+        u.millasCanjeadas += cantidad;
+        if (maxCanjeador == null || (u.millasCanjeadas + u.millasTransferidas) > (maxCanjeador.millasCanjeadas + maxCanjeador.millasTransferidas)){
+            maxCanjeador = u;
+        }
     }
 
     public void transferirMillas(int origen, int destino, double cantidad) {
-        throw new UnsupportedOperationException("Sin implementar");
+        Usuario u_origen = buscarUsuario(origen);   
+        Usuario u_destino = buscarUsuario(destino);
+        
+        // hay que chequear que pasa si se pasa del monton del total
+        u_origen.millasDisponibles -= cantidad;
+        u_destino.millasDisponibles += cantidad;
+        u_origen.millasTransferidas += cantidad;
+
+        if (maxCanjeador == null || (u_origen.millasCanjeadas + u_origen.millasTransferidas) > (maxCanjeador.millasCanjeadas + maxCanjeador.millasTransferidas)){
+            maxCanjeador = u_origen;
+        }
     }
 
     private Usuario buscarUsuario(int id) { 
@@ -71,15 +126,13 @@ public class AirMiles implements SistemaAirMiles {
 
     public String consultarCategoria(int id) {
         Usuario u = buscarUsuario(id);
-        int millas = u.millasTotales;
-        // o poner una variable res e ir cambiando, en realidad no me gustan tantos return
-        if (millas < 10000){
-            return "Bronce";
-        } else if (millas < 50000){
-            return "Platino";
-        } else if (millas < 1000000){
-            return "Oro";
-        } else return "Platino";
+
+        if (u == null) {
+            throw new RuntimeException("Usuario inexistente");
+        }
+
+        return categoriaPorMillas(u.millasTotales);
+
        
     }
 
