@@ -4,7 +4,7 @@ public class AirMiles implements SistemaAirMiles {
     private ABB<Usuario> usuarios;
     private Usuario maxAcumulador;
     private Usuario maxCanjeador;
-    // falta el maxheap 
+    // private MaxHeap heapMillas;
     private Trie promociones;
     
     private class Usuario implements Comparable<Usuario>{
@@ -22,7 +22,7 @@ public class AirMiles implements SistemaAirMiles {
             this.millasTransferidas = 0;
 
         }
-
+        // hay que ver aca como hacemos para lo del heap
         @Override
         public int compareTo(Usuario otro) {
         return Integer.compare(this.id, otro.id);
@@ -33,14 +33,17 @@ public class AirMiles implements SistemaAirMiles {
     public AirMiles() {
         usuarios = new ABB<>();
         promociones = new Trie();
+        // heapMillas = new MaxHeap();
     }
 
     public void registrarUsuario(int id) {
         usuarios.insertar(new Usuario(id));
+        // insertar en heap
     }
 
     public void registrarUsuarioConReferidor(int id, int ref) {
         usuarios.insertar(new Usuario(id));
+        // insertar en heap
     }
     private double consultarFactorCategoria(String categoria) {
         double res = 0.0;
@@ -81,6 +84,7 @@ public class AirMiles implements SistemaAirMiles {
         u.millasTotales += millas;
         u.millasDisponibles += millas;
         
+        // actualizar heap
         if (maxAcumulador == null ||u.millasTotales > maxAcumulador.millasTotales) {
             maxAcumulador = u;
         }
@@ -94,6 +98,7 @@ public class AirMiles implements SistemaAirMiles {
         if (maxCanjeador == null || (u.millasCanjeadas + u.millasTransferidas) > (maxCanjeador.millasCanjeadas + maxCanjeador.millasTransferidas)){
             maxCanjeador = u;
         }
+        //actualizar heap
     }
 
     public void transferirMillas(int origen, int destino, double cantidad) {
@@ -108,6 +113,7 @@ public class AirMiles implements SistemaAirMiles {
         if (maxCanjeador == null || (u_origen.millasCanjeadas + u_origen.millasTransferidas) > (maxCanjeador.millasCanjeadas + maxCanjeador.millasTransferidas)){
             maxCanjeador = u_origen;
         }
+        //actualizar heap
     }
 
     private Usuario buscarUsuario(int id) { 
@@ -160,6 +166,7 @@ public class AirMiles implements SistemaAirMiles {
         return maxCanjeador.id;
     }
 
+    //todavia hay que ver como lo implementamos 
     public int[][] paresTransferidoresExclusivos() {
         throw new UnsupportedOperationException("Sin implementar");
     }
