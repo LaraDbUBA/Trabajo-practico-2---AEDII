@@ -1,11 +1,11 @@
 package aed.tp2;
-// importar el ABB
+
 public class AirMiles implements SistemaAirMiles {
-    private ABB<Integer, Usuario> usuarios;
+    private ABB<Usuario> usuarios;
     private Usuario maxAcumulador;
     private Usuario maxCanjeador;
     // falta el maxheap 
-    // falta el trie 
+    private Trie promociones;
     
     private class Usuario implements Comparable<Usuario>{
         int id;
@@ -32,6 +32,7 @@ public class AirMiles implements SistemaAirMiles {
     
     public AirMiles() {
         usuarios = new ABB<>();
+        promociones = new Trie();
     }
 
     public void registrarUsuario(int id) {
@@ -54,12 +55,23 @@ public class AirMiles implements SistemaAirMiles {
         throw new UnsupportedOperationException("Sin implementar");
     }
 
-    public double consultarSaldo(int id) {
-        return obtener(id).millasDisponibles;
+    private Usuario buscarUsuario(int id) { 
+        return usuarios.obtener(new Usuario(id));
     }
 
+    public double consultarSaldo(int id) {
+        Usuario u = buscarUsuario(id);
+
+        if (u == null) {
+            throw new RuntimeException("Usuario inexistente");
+        }
+
+        return u.millasDisponibles;
+        }
+
     public String consultarCategoria(int id) {
-        int millas = obtener(id).millasTotales;
+        Usuario u = buscarUsuario(id);
+        int millas = u.millasTotales;
         // o poner una variable res e ir cambiando, en realidad no me gustan tantos return
         if (millas < 10000){
             return "Bronce";
@@ -76,15 +88,15 @@ public class AirMiles implements SistemaAirMiles {
     }
 
     public void iniciarPromocion(String nombre, double factor) {
-        throw new UnsupportedOperationException("Sin implementar");
+        promociones.insertar(nombre, factor);    
     }
 
     public void iniciarPromocionConTope(String nombre, double factor, double tope) {
-        throw new UnsupportedOperationException("Sin implementar");
+        promociones.insertarConTope(nombre, factor, tope);    
     }
 
     public void finalizarPromocion(String nombre) {
-        throw new UnsupportedOperationException("Sin implementar");
+        promociones.eliminar(nombre);    
     }
 
     public int elMasAcumulador() {
