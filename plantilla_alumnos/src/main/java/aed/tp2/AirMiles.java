@@ -24,7 +24,7 @@ public class AirMiles implements SistemaAirMiles {
             this.posicionHeap = -1;
 
         }
-        // hay que ver aca como hacemos para lo del heap
+        
         @Override
         public int compareTo(Usuario otro) {
         return Integer.compare(this.id, otro.id); //O(1)
@@ -36,28 +36,25 @@ public class AirMiles implements SistemaAirMiles {
         usuarios = new ABB<>(); //O(1)
         promociones = new Trie(); // O(1)
         promociones.insertar("NoPromo", 1.0);
-        // Con lo que digo en el archivo de MaxHeap, lo haria asi
-       
         heapMillas = new MaxHeap<Usuario>(new MaxHeap.Operaciones<Usuario>() {
+            @Override
+            public int comparar(Usuario a, Usuario b) {
+                return Integer.compare(
+                    a.millasDisponibles,
+                    b.millasDisponibles
+                );
+            }
 
-        @Override
-        public int comparar(Usuario a, Usuario b) {
-            return Integer.compare(
-                a.millasDisponibles,
-                b.millasDisponibles
-            );
-        }
+            @Override
+            public int obtenerPosicion(Usuario u) {
+                return u.posicionHeap;
+            }
 
-        @Override
-        public int obtenerPosicion(Usuario u) {
-            return u.posicionHeap;
+            @Override
+            public void actualizarPosicion(Usuario u, int posicion) {
+                u.posicionHeap = posicion;
+            }
         }
-
-        @Override
-        public void actualizarPosicion(Usuario u, int posicion) {
-            u.posicionHeap = posicion;
-        }
-    }
     );
        
     }
@@ -79,7 +76,6 @@ public class AirMiles implements SistemaAirMiles {
         heapMillas.insertar(u); // O(logU)
         // Complejidad final: O(logU)
     }
-    // falta lo de referidor
 
 
     public void registrarUsuarioConReferidor(int id, int ref) {
@@ -97,12 +93,13 @@ public class AirMiles implements SistemaAirMiles {
          * Despues en base a la modificacion volvemos a verificar si es necesario cambiar las cosas
          */
 
-        Usuario referidor = buscarUsuario(ref);
+        Usuario referidor = buscarUsuario(ref); // O(logU)
 
         referidor.millasDisponibles +=500;
-        referidor.millasTotales += 500;
+        referidor.millasTotales += 500; // se le agregan las totales tambien?
 
-        heapMillas.actualizar(referidor);
+        // si de verdad hay que sumar las millas Totales hay que chequear el maximo acumulador
+        heapMillas.actualizar(referidor); // O(logU)
         
 
         //Falta agregar el caso Null?
@@ -187,8 +184,8 @@ public class AirMiles implements SistemaAirMiles {
         if (maxCanjeador == null || (u_origen.millasCanjeadas + u_origen.millasTransferidas) > (maxCanjeador.millasCanjeadas + maxCanjeador.millasTransferidas)){
             maxCanjeador = u_origen;
         }
-        // heapMillas.actualizar(u_origen) //O(logU)
-        // heapMillas.actualizar(u_destino) //O(logU)
+        heapMillas.actualizar(u_origen); //O(logU)
+        heapMillas.actualizar(u_destino); //O(logU)
         // O(logU)
     }
 
