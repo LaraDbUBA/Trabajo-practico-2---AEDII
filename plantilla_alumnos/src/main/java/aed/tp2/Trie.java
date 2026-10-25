@@ -4,6 +4,7 @@ public class Trie {
     private class Promocion {
         double factor;
         double tope;
+        double millasOtorgadas;
         boolean tieneTope;
 
         Promocion(double factor) {
@@ -14,6 +15,7 @@ public class Trie {
         Promocion(double factor, double tope) {
             this.factor = factor;
             this.tope = tope;
+            this.millasOtorgadas = 0;
             this.tieneTope = true;
         }
     }
@@ -35,7 +37,7 @@ public class Trie {
     }
 
     private int indice(char c) {
-        return c - 'A';
+        return Character.toUpperCase(c) - 'A';
     }
 
     public void insertar(String nombre, double factor) {
@@ -124,5 +126,25 @@ public class Trie {
         }
 
         return nodo.promocion.tope;
+    }
+    public double calcularMillas(String nombre, double millasBase) {
+        NodoTrie nodo = obtenerNodo(nombre); // Una sola búsqueda: O(|L|)
+
+        if (nodo == null || nodo.promocion == null) {
+            throw new RuntimeException("Promoción inexistente");
+        }
+
+        Promocion promo = nodo.promocion;
+        double millasConPromo = millasBase * promo.factor;
+
+        if (promo.tieneTope) {
+            if (promo.millasOtorgadas + millasConPromo > promo.tope) {
+                return millasBase;
+            }
+
+            promo.millasOtorgadas += millasConPromo;
+        }
+
+        return millasConPromo;
     }
 }

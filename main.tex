@@ -13,13 +13,11 @@
 \usepackage{booktabs}
 \usepackage{array}
 \usepackage{enumitem}
-
 \usepackage{xcolor}
 
 \geometry{margin=2.5cm}
 \setlength{\parskip}{0.5em}
 \setlength{\parindent}{0pt}
-
 
 %------------------------------------------------
 % DOCUMENTO
@@ -54,114 +52,109 @@
     {\large \today\par}
 \end{titlepage}
 
-
 %------------------------------------------------
 \section{Introducción}
 %------------------------------------------------
 
 En este documento se justifican las estructuras de datos
-elegidas para implementar el TAD \texttt{AirMiles}. Para cada
-estructura se describe la información que almacena, las
-operaciones que permite realizar y su relación con las
-complejidades exigidas por la especificación.
+seleccionadas para implementar el TAD \texttt{AirMiles}.
+Para cada estructura se describe la información que almacena,
+las operaciones que permite realizar y su relación con las
+complejidades temporales esperadas.
 
-Denotamos por $U$ la cantidad de usuarios registrados y por
-$|L|$ la longitud del nombre de una promoción.
+Denotamos por $U$ la cantidad de usuarios registrados,
+por $P$ la cantidad de promociones y por $|L|$ la longitud
+del nombre de una promoción. Además, $N$ representa la
+cantidad de usuarios solicitados para el ranking.
 
-El objetivo es seleccionar estructuras que permitan
-implementar las operaciones requeridas respetando sus
-complejidades temporales, tanto en el caso promedio como
-en el peor caso, según corresponda.
+El diseño busca que las operaciones de consulta y modificación
+accedan directamente a la información que necesitan, evitando
+recorridos innecesarios. Las complejidades que dependen del
+ABB se analizan distinguiendo el caso promedio del peor caso,
+ya que el árbol utilizado no realiza balanceo automático.
 
 %------------------------------------------------
-\section{Almacenamiento de usuarios}
+\section{Almacenamiento e identificación de usuarios}
 %------------------------------------------------
 
 \subsection{Estructura elegida}
 
-Para almacenar los usuarios se utiliza un árbol binario de
-búsqueda (ABB). Cada elemento del árbol es un objeto de tipo
-\texttt{Usuario}, ordenado según su identificador único
-(\texttt{id}) mediante la implementación de
-\texttt{Comparable<Usuario>}.
+Los usuarios se almacenan en un árbol binario de búsqueda
+(ABB). Cada nodo contiene un objeto \texttt{Usuario}, y el
+orden del árbol se determina por el identificador único
+(\texttt{id}).
 
-El ABB mantiene referencias a los hijos izquierdo y derecho
-de cada nodo, así como a su padre.
+La clase \texttt{Usuario} implementa
+\texttt{Comparable<Usuario>}. Su método \texttt{compareTo}
+compara los identificadores mediante
+\texttt{Integer.compare}. Esto permite que el ABB localice
+un usuario a partir de su ID sin confundirlo con otro usuario
+que tenga distintos valores de millas.
 
 \subsection{Justificación}
 
-La elección de un ABB permite buscar e insertar usuarios
-utilizando su identificador. Además, permite recorrer todos
-los usuarios mediante un iterador.
+El ABB permite organizar los usuarios por identificador y
+realizar búsquedas e inserciones siguiendo un único camino
+desde la raíz. En un árbol razonablemente equilibrado, estas
+operaciones requieren tiempo $O(\log U)$.
 
-Al tratarse de un ABB sin balanceo automático, las
-operaciones de búsqueda e inserción tienen complejidad
-$O(\log U)$ en el caso promedio y $O(U)$ en el peor caso.
-Esto coincide con las cotas establecidas para las operaciones
-de usuarios en la especificación.
 
 \subsection{Operaciones asociadas}
 
-El ABB se utiliza en las siguientes operaciones:
+El ABB se utiliza para:
 
 \begin{itemize}[nosep]
     \item \texttt{registrarUsuario} y
     \texttt{registrarUsuarioConReferidor}: insertar usuarios.
     \item \texttt{consultarSaldo} y
-    \texttt{consultarCategoria}: buscar usuarios por ID.
-    \item \texttt{acumularMillas}, \texttt{canjearMillas}
-    y \texttt{transferirMillas}: localizar las cuentas que
-    deben actualizarse.
-    \item \texttt{paresTransferidoresExclusivos}: recorrer
-    todos los usuarios.
+    \texttt{consultarCategoria}: localizar al usuario por ID.
+    \item \texttt{acumularMillas}: encontrar la cuenta que se
+    debe actualizar.
+    \item \texttt{canjearMillas}: localizar al usuario que
+    realiza el canje.
+    \item \texttt{transferirMillas}: localizar al usuario
+    de origen y al de destino.
+    \item \texttt{paresTransferidoresExclusivos}: permitiría
+    recorrer todos los usuarios, si la implementación de esta
+    operación lo requiere.
 \end{itemize}
 
+La operación auxiliar \texttt{buscarUsuario} centraliza el
+acceso al ABB y evita repetir la lógica de búsqueda en los
+distintos métodos de \texttt{AirMiles}.
+
 %------------------------------------------------
-\section{Representación de los usuarios}
+\section{Representación de cada usuario}
 %------------------------------------------------
 
 Cada usuario se representa mediante un objeto
-\texttt{Usuario}, que agrupa la información correspondiente
-a su cuenta.
+\texttt{Usuario}. El objeto agrupa los datos de su cuenta,
+por lo que, una vez localizado en el ABB, las operaciones
+pueden consultar o modificar sus atributos directamente.
 
 Entre los atributos considerados se encuentran:
 
 \begin{itemize}[nosep]
-    \item Identificador del usuario.
-    \item Millas disponibles.
-    \item Millas acumuladas históricamente.
-    \item Millas canjeadas históricamente.
-    \item Historial de transacciones.
-    \item Información auxiliar para las relaciones de
-    transferencia con otros usuarios.
+    \item \texttt{id}: identificador del usuario.
+    \item \texttt{millasDisponibles}: saldo que puede utilizar.
+    \item \texttt{millasTotales}: millas acumuladas históricamente.
+    \item \texttt{millasCanjeadas}: millas utilizadas en canjes.
+    \item \texttt{millasTransferidas}: millas transferidas a
+    otros usuarios.
+    \item \texttt{posicionHeap}: posición actual del usuario
+    en el max-heap.
 \end{itemize}
 
-Agrupar estos datos en un objeto permite acceder a la
-información de una cuenta una vez localizado el usuario
-en el ABB. Las modificaciones se realizan sobre el mismo
-objeto almacenado en el árbol, sin necesidad de reemplazarlo.
+Los atributos que representan cantidades históricas permiten
+actualizar las estadísticas sin tener que reconstruirlas a
+partir de todas las operaciones anteriores. Por su parte,
+\texttt{posicionHeap} permite localizar al usuario dentro
+del heap en tiempo $O(1)$ antes de actualizar su prioridad.
 
-%------------------------------------------------
-\section{Historial de transacciones}
-%------------------------------------------------
-
-\subsection{Estructura elegida}
-
-El historial de cada usuario se representa mediante una
-lista enlazada. Se mantiene una referencia al último nodo
-de la lista para poder agregar nuevas transacciones al final.
-
-\subsection{Justificación}
-
-La lista enlazada permite conservar las transacciones en
-el orden en que se realizan. Mantener una referencia al
-último nodo permite agregar una transacción en tiempo
-$O(1)$.
-
-Cada transacción almacena los datos necesarios para
-representar la operación, como su tipo y cantidad de millas.
-Cuando corresponda, también incluye la distancia, la
-promoción, el factor aplicado y los usuarios involucrados.
+La comparación de usuarios por ID se mantiene independiente
+de su saldo: el ABB necesita un orden estable basado en la
+identidad del usuario, mientras que el heap utiliza el saldo
+disponible para determinar las prioridades.
 
 %------------------------------------------------
 \section{Promociones}
@@ -169,50 +162,97 @@ promoción, el factor aplicado y los usuarios involucrados.
 
 \subsection{Estructura elegida}
 
-Para almacenar las promociones se considera utilizar un
-trie (árbol de prefijos), en el que cada camino desde la
-raíz representa una secuencia de caracteres del nombre
-de una promoción.
+Las promociones se almacenan en un trie o árbol de prefijos.
+Cada nodo contiene un arreglo de 26 hijos, uno por cada letra
+del alfabeto, y puede almacenar la información de una promoción
+cuando representa el final de su nombre.
 
-El nodo correspondiente al final de cada nombre almacena
-la información de la promoción, como su factor y, si
-corresponde, su tope y cupo restante.
+La información de cada promoción se agrupa en un objeto
+\texttt{Promocion}, que contiene:
+
+\begin{itemize}[nosep]
+    \item \texttt{factor}: multiplicador de la promoción.
+    \item \texttt{tope}: cantidad máxima de millas que se pueden
+    otorgar utilizando la promoción, cuando tiene límite.
+    \item \texttt{millasOtorgadas}: cantidad de millas que ya
+    consumieron el tope.
+    \item \texttt{tieneTope}: indica si existe un límite.
+\end{itemize}
+
+La promoción inicial \texttt{NombrePromo}, con factor $1$,
+se agrega al crear el sistema.
 
 \subsection{Justificación}
 
-Si el acceso a los hijos de cada nodo tiene costo constante,
-buscar, insertar y eliminar una promoción requiere recorrer
-sus caracteres. Por lo tanto, estas operaciones tienen
-complejidad $O(|L|)$, donde $|L|$ es la longitud del nombre.
+El trie permite localizar una promoción recorriendo los
+caracteres de su nombre. Si el acceso a los hijos de cada
+nodo cuesta $O(1)$, buscar, insertar y eliminar una promoción
+requiere $O(|L|)$, independientemente de la cantidad total
+de promociones almacenadas.
 
-Esta estructura resulta adecuada porque las complejidades
-especificadas para iniciar y finalizar promociones dependen
-de la longitud del nombre y no de la cantidad total de
-promociones.
+Esta estructura es adecuada porque las operaciones sobre
+promociones dependen de sus nombres. Además, agrupar los datos
+de cada promoción en un mismo objeto permite consultar el
+factor y controlar el tope sin mantener estructuras separadas
+para cada atributo.
 
-La implementación debe contemplar todos los caracteres
-permitidos en los nombres de promoción.
+\subsection{Control del tope}
+
+Para acumular millas se calcula primero la cantidad base,
+aplicando el factor de categoría del usuario. Luego, el método
+\texttt{calcularMillas} busca la promoción una sola vez y
+calcula cuántas millas se obtendrían al aplicar su factor.
+
+Si la promoción no tiene tope, se aplica el factor normalmente.
+Si tiene tope, se verifica que la cantidad acumulada más las
+millas de la nueva operación no supere el límite. Cuando la
+operación es válida, se actualiza \texttt{millasOtorgadas}.
+Si superaría el tope, se otorgan únicamente las millas base y
+el acumulado de la promoción no se modifica.
+
+Por lo tanto, el tope cuenta todas las millas otorgadas en
+las acumulaciones en las que se aplica la promoción, no solo
+las millas adicionales producidas por el multiplicador.
+
+Este control requiere una única búsqueda en el trie, por lo
+que la complejidad de esta parte es $O(|L|)$.
+
+La implementación supone que los nombres de promoción están
+formados por letras de la A a la Z, sin espacios ni otros
+caracteres. Si la especificación admite un alfabeto más amplio,
+la representación de los hijos debe adaptarse.
 
 %------------------------------------------------
 \section{Máximos históricos}
 %------------------------------------------------
 
 Las operaciones \texttt{elMasAcumulador} y
-\texttt{elMasCanjeador} deben responder en tiempo $O(1)$.
+\texttt{elMasCanjeador} deben consultar usuarios que alcanzan
+determinados máximos históricos.
 
-Para cumplir esta exigencia, se mantienen referencias o
-identificadores de los usuarios que poseen, respectivamente,
-la mayor cantidad histórica de millas acumuladas y la mayor
-cantidad histórica de millas canjeadas.
+Para evitar recorrer el ABB en cada consulta, se mantienen
+referencias directas a los usuarios que ocupan esas posiciones:
+\texttt{maxAcumulador} y \texttt{maxCanjeador}.
 
-Cada vez que un usuario acumula o canjea millas, se
-actualiza su contador histórico y se verifica si corresponde
-actualizar alguno de los máximos.
+Cuando un usuario acumula millas, se actualiza su contador
+histórico y se compara con el máximo registrado. De manera
+análoga, cuando un usuario canjea o transfiere millas, se
+actualiza la información que corresponda al criterio definido
+por la especificación para el máximo canjeador.
 
-De esta manera, las consultas no necesitan recorrer todos
-los usuarios. La implementación debe definir cómo resolver
-los empates y mantener los máximos actualizados durante
-todas las operaciones.
+Si el usuario supera el máximo actual, basta con reemplazar
+la referencia correspondiente. La consulta posterior consiste
+en acceder a esa referencia y devolver el ID, por lo que cuesta
+$O(1)$.
+
+Al registrar el primer usuario, las referencias deben
+inicializarse para evitar consultar un máximo que todavía sea
+\texttt{null}. También debe respetarse el criterio de desempate
+que establezca la especificación.
+
+Esta estrategia evita recorrer todos los usuarios en cada
+consulta, a cambio de mantener las referencias actualizadas
+durante las operaciones que modifican los contadores.
 
 %------------------------------------------------
 \section{Ranking de millas disponibles}
@@ -220,125 +260,161 @@ todas las operaciones.
 
 \subsection{Estructura elegida}
 
-Para obtener los $N$ usuarios con mayor cantidad de millas
-disponibles se utiliza un max-heap ordenado por saldo
-disponible.
+Para obtener los usuarios con mayor saldo disponible se
+utiliza un max-heap. La prioridad de cada elemento se determina
+por \texttt{millasDisponibles}; el usuario con mayor saldo se
+encuentra en la raíz.
 
-Cada elemento representa un usuario y la raíz contiene
-al usuario con mayor saldo. Además, se mantiene información
-auxiliar que permite localizar la posición de cada usuario
-en el heap cuando es necesario actualizar su prioridad.
+El heap es genérico y recibe las operaciones necesarias para
+comparar elementos y consultar o actualizar sus posiciones.
+De esta forma, puede funcionar con objetos \texttt{Usuario}
+sin depender de la implementación de las cuentas.
 
 \subsection{Justificación}
 
-La propiedad del max-heap garantiza que cada padre tiene
-una prioridad mayor o igual que la de sus hijos. No es
-necesario que el hijo izquierdo sea mayor que el derecho.
+La propiedad de max-heap garantiza que la prioridad de cada
+padre es mayor o igual que la de sus hijos. No exige que el
+hijo izquierdo sea mayor que el derecho ni mantiene a todos
+los elementos ordenados.
 
-Cada extracción del máximo cuesta $O(\log U)$. Por lo tanto,
-obtener los primeros $N$ usuarios cuesta
-\[
-    O(N\log U),
-\]
-como requiere la especificación.
+Esta propiedad permite consultar el máximo en $O(1)$ y extraerlo
+en $O(\log U)$. Para obtener los primeros $N$ usuarios, se
+extrae repetidamente el máximo. Como las extracciones modifican
+temporalmente el heap, los elementos extraídos se guardan y
+luego se vuelven a insertar, de modo que el ranking no altera
+el conjunto de usuarios registrados.
 
-Cuando una operación modifica el saldo disponible de un
-usuario, debe actualizarse su posición en el heap para
-preservar la propiedad de max-heap.
+Tanto las extracciones como las reinserciones cuestan
+$O(\log U)$ cada una. Por eso, obtener y restaurar los primeros
+$N$ elementos cuesta $O(N\log U)$, suponiendo $N\leq U$.
 
-%------------------------------------------------
-\section{Pares de transferidores exclusivos}
-%------------------------------------------------
+\subsection{Actualización de prioridades}
 
-\subsection{Objetivo}
+Cuando cambia el saldo disponible de un usuario, su prioridad
+en el heap también puede cambiar. Para actualizarla
+eficientemente, cada usuario conserva su posición actual
+mediante \texttt{posicionHeap}.
 
-La operación \texttt{paresTransferidoresExclusivos} devuelve
-todos los pares de usuarios que han transferido millas
-exclusivamente entre sí. Su complejidad requerida es $O(U)$.
+Así se evita buscar el usuario recorriendo todo el heap.
+Una vez conocida su posición, se restaura la propiedad de
+max-heap moviendo el elemento hacia arriba o hacia abajo
+según corresponda, en tiempo $O(\log U)$.
 
-\subsection{Representación de las relaciones}
+La posición se actualiza cada vez que se intercambian elementos.
+Cuando un usuario se extrae, su posición se marca como
+inválida; al reinsertarlo, se establece nuevamente.
 
-Para resolver esta consulta se mantiene información auxiliar
-sobre las contrapartes de cada usuario. Una contraparte es
-otro usuario con quien se registró al menos una transferencia,
-ya sea enviada o recibida.
-
-La representación debe distinguir usuarios diferentes y
-evitar contar varias veces a una misma contraparte cuando
-se repiten las transferencias.
-
-\subsection{Estrategia de consulta}
-
-La consulta recorre todos los usuarios una sola vez y utiliza
-la información auxiliar mantenida durante las transferencias
-para identificar aquellos que cumplen la condición de
-exclusividad.
-
-Cada par se agrega una única vez. Por ejemplo, se puede
-imponer que el identificador del primer usuario sea menor
-que el del segundo.
-
-Para garantizar $O(U)$ en el peor caso, la consulta debe
-realizar trabajo constante por usuario y evitar búsquedas
-adicionales en el ABB para localizar a cada contraparte.
-Por lo tanto, la estructura auxiliar debe permitir verificar
-la relación de exclusividad en tiempo constante.
+La complejidad $O(N\log U)$ supone que el heap contiene a
+todos los usuarios y que se mantiene actualizado después de
+cada operación que modifica el saldo.
 
 %------------------------------------------------
-\section{Resumen de complejidades}
+\section{Transferencias entre usuarios}
 %------------------------------------------------
 
-La siguiente tabla resume las complejidades requeridas
-por la especificación.
+La operación \texttt{transferirMillas} localiza al usuario de
+origen y al de destino mediante el ABB. Luego modifica los
+saldos disponibles de ambas cuentas y actualiza los contadores
+históricos que correspondan.
+
+Si el ranking se mantiene en un max-heap, ambas prioridades
+deben actualizarse después de modificar los saldos. Cada
+búsqueda en el ABB cuesta $O(\log U)$ en promedio y $O(U)$
+en el peor caso; cada actualización del heap cuesta
+$O(\log U)$.
+
+Para identificar pares de transferidores exclusivos no basta
+con conocer los totales transferidos por cada usuario. Es
+necesario conservar información sobre las relaciones entre
+origen y destino, de modo que se pueda distinguir entre
+transferencias recíprocas, transferencias hacia terceros y
+repeticiones entre una misma pareja.
+
+La estructura auxiliar elegida para estas relaciones debe
+permitir verificar la exclusividad y evitar contar dos veces
+un mismo par. La implementación de
+\texttt{paresTransferidoresExclusivos} debe completar este
+mantenimiento y demostrar que la consulta cumple la
+complejidad exigida por la especificación.
+
+%------------------------------------------------
+\section{Complejidades temporales}
+%------------------------------------------------
+
+La siguiente tabla resume las complejidades derivadas de
+las estructuras descriptas. Las operaciones que consultan o
+modifican usuarios dependen de la altura del ABB; por eso se
+indica tanto el caso promedio como el peor caso.
 
 \begin{center}
 \renewcommand{\arraystretch}{1.3}
-\begin{tabular}{|p{7.2cm}|p{5.2cm}|}
+\begin{tabular}{|p{7.0cm}|p{5.4cm}|}
 \hline
-\textbf{Operación} & \textbf{Complejidad requerida} \\
+\textbf{Operación} & \textbf{Complejidad temporal} \\
 \hline
-Crear el sistema & $O(1)$ \\
+Crear el sistema & $O(1)$ para inicializar las estructuras \\
 \hline
-Registrar usuarios & $O(\log U)$ promedio, $O(U)$ peor caso \\
+Registrar usuario & $O(\log U)$ promedio; $O(U)$ peor caso \\
 \hline
-Acumular millas & $O(\log U+|L|)$ promedio, $O(U+|L|)$ peor caso \\
+Buscar usuario & $O(\log U)$ promedio; $O(U)$ peor caso \\
 \hline
-Canjear millas & $O(\log U)$ promedio, $O(U)$ peor caso \\
+Acumular millas & $O(\log U+|L|)$ promedio; $O(U+|L|)$ peor caso \\
 \hline
-Transferir millas & $O(\log U)$ promedio, $O(U)$ peor caso \\
+Canjear millas & $O(\log U)$ promedio; $O(U)$ peor caso \\
 \hline
-Consultar saldo o categoría & $O(\log U)$ promedio, $O(U)$ peor caso \\
+Transferir millas & $O(\log U)$ promedio; $O(U)$ peor caso \\
 \hline
-Iniciar o finalizar promociones & $O(|L|)$ \\
+Consultar saldo o categoría & $O(\log U)$ promedio; $O(U)$ peor caso \\
 \hline
-Máximo acumulador o canjeador & $O(1)$ \\
+Iniciar o finalizar promoción & $O(|L|)$ \\
 \hline
-Ranking de millas & $O(N\log U)$ \\
+Controlar tope de promoción & $O(|L|)$ \\
 \hline
-Pares de transferidores exclusivos & $O(U)$ \\
+Consultar máximo histórico & $O(1)$ \\
+\hline
+Consultar máximo del heap & $O(1)$ \\
+\hline
+Actualizar prioridad en el heap & $O(\log U)$ \\
+\hline
+Obtener y restaurar los primeros $N$ del ranking & $O(N\log U)$ \\
+\hline
+Pares de transferidores exclusivos & Depende de completar la estructura auxiliar \\
 \hline
 \end{tabular}
 \end{center}
+
+Las complejidades de las operaciones que utilizan el ABB
+suponen que las implementaciones de sus métodos básicos
+cumplen las cotas indicadas. Como el árbol no se balancea
+automáticamente, no se garantiza $O(\log U)$ en el peor caso.
+
+Las complejidades de las operaciones del heap suponen que
+las comparaciones y las consultas o actualizaciones de
+posición cuestan $O(1)$.
 
 %------------------------------------------------
 \section{Conclusión}
 %------------------------------------------------
 
-Las estructuras seleccionadas buscan equilibrar la facilidad
-de implementación con las complejidades exigidas por la
-especificación.
+Las estructuras elegidas responden a necesidades diferentes
+del TAD. El ABB organiza los usuarios por identificador y
+permite localizar sus cuentas; el trie permite administrar
+promociones en función de la longitud de sus nombres; y el
+max-heap permite obtener los usuarios con mayor saldo sin
+ordenar todas las cuentas en cada consulta.
 
-El ABB permite organizar los usuarios por identificador;
-el trie permite operar sobre promociones en función de la
-longitud de sus nombres; la lista enlazada facilita registrar
-transacciones; y el max-heap permite obtener eficientemente
-los usuarios con mayor saldo disponible.
+Las referencias a los máximos históricos permiten responder
+esas consultas en tiempo constante, mientras que la posición
+almacenada por cada usuario facilita mantener el heap
+actualizado cuando cambian los saldos.
 
-Las consultas de máximos históricos y de transferidores
-exclusivos requieren mantener información auxiliar
-actualizada durante las operaciones que modifican el sistema.
-La corrección de estas actualizaciones es fundamental para
-garantizar tanto los resultados como las complejidades
-requeridas.
+La corrección del sistema depende de mantener consistentes
+estas estructuras auxiliares durante las operaciones. En
+particular, deben actualizarse los saldos, los contadores
+históricos, las prioridades del heap y el consumo de los topes
+promocionales. La representación de las relaciones de
+transferencia debe completarse de acuerdo con la condición
+de exclusividad establecida por la especificación.
 
 \end{document}
+```
