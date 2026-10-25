@@ -36,9 +36,9 @@ public class AirMiles implements SistemaAirMiles {
         usuarios = new ABB<>(); //O(1)
         promociones = new Trie(); // O(1)
         promociones.insertar("NoPromo", 1.0);
-       // Con lo que digo en el archivo de MaxHeap, lo haria asi
+        // Con lo que digo en el archivo de MaxHeap, lo haria asi
        
-       heapMillas = new MaxHeap<Usuario>(new MaxHeap.Operaciones<Usuario>() {
+        heapMillas = new MaxHeap<Usuario>(new MaxHeap.Operaciones<Usuario>() {
 
         @Override
         public int comparar(Usuario a, Usuario b) {
@@ -79,13 +79,37 @@ public class AirMiles implements SistemaAirMiles {
         heapMillas.insertar(u); // O(logU)
         // Complejidad final: O(logU)
     }
-// falta lo de referidor
+    // falta lo de referidor
+
+
     public void registrarUsuarioConReferidor(int id, int ref) {
         Usuario u = new Usuario(id); // O(1)
 
+        // Antes de agregar aumentamos la cantidad de millas
+        u.millasDisponibles +=500;
+        u.millasTotales += 500;
+
         usuarios.insertar(u); // O(logU)
         heapMillas.insertar(u); // O(logU)
+
+        /**
+         * Tenemos que sumarle 500 millas al referidor
+         * Despues en base a la modificacion volvemos a verificar si es necesario cambiar las cosas
+         */
+
+        Usuario referidor = buscarUsuario(ref);
+
+        referidor.millasDisponibles +=500;
+        referidor.millasTotales += 500;
+
+        heapMillas.actualizar(referidor);
+        
+
+        //Falta agregar el caso Null?
+        
     }
+
+
     private double consultarFactorCategoria(String categoria) {
         double res = 0.0; //O(1)
 
@@ -132,8 +156,7 @@ public class AirMiles implements SistemaAirMiles {
 
         heapMillas.actualizar(u); // O(log U)
 
-        if (maxAcumulador == null ||
-            u.millasTotales > maxAcumulador.millasTotales) {
+        if (maxAcumulador == null || u.millasTotales > maxAcumulador.millasTotales) {
             maxAcumulador = u; // O(1)
         }
 
@@ -205,7 +228,7 @@ public class AirMiles implements SistemaAirMiles {
 
         int[] ranking = new int[cantidad];
         ArrayList<Usuario> auxiliares = new ArrayList<>();
-//se repite N veces
+        //se repite N veces
         for (int i = 0; i < cantidad; i++) {
             Usuario u = heapMillas.extraerMaximo(); //O(logU)
 
@@ -235,10 +258,12 @@ public class AirMiles implements SistemaAirMiles {
     }
 
     public int elMasAcumulador() {
+        if (maxAcumulador == null) {return -1;} // O(1)
         return maxAcumulador.id; // O(1)
     }
 
     public int elMasCanjeador() {
+        if(maxCanjeador == null) {return -1;} // O(1)
         return maxCanjeador.id; // O(1)
     }
 
