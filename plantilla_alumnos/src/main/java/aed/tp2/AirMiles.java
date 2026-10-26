@@ -105,6 +105,9 @@ public class AirMiles implements SistemaAirMiles {
         heapMillas.actualizar(referidor);
         
 
+        if (u.millasTotales > maxAcumulador.millasTotales){maxAcumulador = u;}
+        if (referidor.millasTotales > maxAcumulador.millasTotales){maxAcumulador = referidor;}
+
         //Falta agregar el caso Null?
         
     }
