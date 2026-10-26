@@ -347,8 +347,31 @@ private void invalidarPareja(Usuario usuario) {
         return maxCanjeador.id; // O(1)
     }
 
-    //todavia hay que ver como lo implementamos 
+    
     public int[][] paresTransferidoresExclusivos() {
         throw new UnsupportedOperationException("Sin implementar");
+        /*
+        
+        int cantidad = paresExclusivos.longitud();
+        int[][] resultado = new int[cantidad][2];
+
+        Iterador<Relacion> iter = paresExclusivos.iterador();
+        int i = 0;
+
+        while (iter.haySiguiente()) {
+            Relacion relacion = iter.siguiente();
+
+            resultado[i][0] = relacion.obtenerIdMenor();
+            resultado[i][1] = relacion.obtenerIdMayor();
+
+            i++;
+        }
+
+        return resultado;
+Sea P la longitud de pares exclusivos
+El recorrido es O(P), y como cada pareja involucra dos 
+usuarios distintos, P < U/2. Por eso, la complejidad 
+final es O(U).
+        */
     }
 }
