@@ -6,6 +6,8 @@ public class AirMiles implements SistemaAirMiles {
     private Usuario maxCanjeador;
     private MaxHeap<Usuario> heapMillas;
     private Trie promociones;
+    // TablaHashRelaciones relaciones;
+    // private ListaEnlazada<Relacion> paresExclusivos; <- Idea
     
     private class Usuario implements Comparable<Usuario>{
         int id;
@@ -14,6 +16,11 @@ public class AirMiles implements SistemaAirMiles {
         int millasCanjeadas;
         int millasTransferidas;
         int posicionHeap;
+      /* IDEA
+        int cantidadContrapartes;
+        Usuario parejaExclusiva ;
+        Handle<Relacion> handleParejaExclusiva;
+      */
 
         Usuario(int id){
             this.id = id;
@@ -22,6 +29,11 @@ public class AirMiles implements SistemaAirMiles {
             this.millasCanjeadas = 0;
             this.millasTransferidas = 0;
             this.posicionHeap = -1;
+            /* IDEA
+                this.cantidadContrapartes = 0;
+                this.parejaExclusiva = null;
+                this.handleParejaExclusiva = null;
+            */
 
         }
         
@@ -36,6 +48,8 @@ public class AirMiles implements SistemaAirMiles {
         usuarios = new ABB<>(); //O(1)
         promociones = new Trie(); // O(1)
         promociones.insertar("NoPromo", 1.0);
+       // paresExclusivos = new ListaEnlazada<>();
+       // relaciones = new TablaHashRelaciones();
         heapMillas = new MaxHeap<Usuario>(new MaxHeap.Operaciones<Usuario>() {
             @Override
             public int comparar(Usuario a, Usuario b) {
@@ -54,8 +68,9 @@ public class AirMiles implements SistemaAirMiles {
             public void actualizarPosicion(Usuario u, int posicion) {
                 u.posicionHeap = posicion;
             }
-        }
-    );
+            }
+        );
+
        
     }
     public AirMiles crearSistema(){
@@ -184,6 +199,7 @@ public class AirMiles implements SistemaAirMiles {
         if (maxCanjeador == null || (u_origen.millasCanjeadas + u_origen.millasTransferidas) > (maxCanjeador.millasCanjeadas + maxCanjeador.millasTransferidas)){
             maxCanjeador = u_origen;
         }
+       // actualizarRelacion(u_origen, u_destino);
         heapMillas.actualizar(u_origen); //O(logU)
         heapMillas.actualizar(u_destino); //O(logU)
         // O(logU)
@@ -202,7 +218,74 @@ public class AirMiles implements SistemaAirMiles {
 
         return u.millasDisponibles;
         }
+/*
+private void actualizarRelacion(Usuario origen, Usuario destino) {
+    Relacion relacion = relaciones.obtener(origen.id, destino.id);
 
+    // Si es la primera transferencia entre estos usuarios
+    if (relacion == null) {
+
+        // Si alguno tenía una pareja exclusiva, deja de serlo
+        if (origen.parejaExclusiva != null) {
+            invalidarPareja(origen);
+        }
+
+        if (destino.parejaExclusiva != null) {
+            invalidarPareja(destino);
+        }
+
+        // Creamos la relación y la guardamos en la tabla hash
+        relacion = new Relacion(origen.id, destino.id);
+        relaciones.insertar(relacion);
+
+        // Ahora cada uno tiene una contraparte distinta más
+        origen.cantidadContrapartes++;
+        destino.cantidadContrapartes++;
+    }
+
+    // Registramos el sentido de esta transferencia
+    relacion.registrarTransferencia(origen.id, destino.id);
+
+    // Si se transfirieron en ambos sentidos y no tienen otras contrapartes
+    if (relacion.huboEnAmbasDirecciones()
+            && origen.cantidadContrapartes == 1
+            && destino.cantidadContrapartes == 1
+            && origen.parejaExclusiva == null
+            && destino.parejaExclusiva == null) {
+
+        // Agregamos la relación a la lista de parejas exclusivas
+        relacion.handleExclusivo = paresExclusivos.agregarAtras(relacion);
+
+        origen.parejaExclusiva = relacion;
+        destino.parejaExclusiva = relacion;
+    }
+}
+
+private void invalidarPareja(Usuario usuario) {
+    Relacion relacion = usuario.parejaExclusiva;
+
+    if (relacion != null) {
+        // Sacamos la relación de la lista en O(1)
+        relacion.handleExclusivo.eliminar();
+        relacion.handleExclusivo = null;
+
+        // Buscamos al otro usuario de la pareja
+        int otroId;
+
+        if (relacion.obtenerIdMenor() == usuario.id) {
+            otroId = relacion.obtenerIdMayor();
+        } else {
+            otroId = relacion.obtenerIdMenor();
+        }
+
+        Usuario otro = buscarUsuario(otroId);
+
+        // Ninguno sigue teniendo pareja exclusiva
+        usuario.parejaExclusiva = null;
+        otro.parejaExclusiva = null;
+    }
+}
+*/
     public String consultarCategoria(int id) {
         Usuario u = buscarUsuario(id); //O(logU)
 
