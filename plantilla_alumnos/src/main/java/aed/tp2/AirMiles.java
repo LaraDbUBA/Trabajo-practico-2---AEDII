@@ -1,4 +1,5 @@
 package aed.tp2;
+import java.rmi.UnexpectedException;
 import java.util.ArrayList;
 public class AirMiles implements SistemaAirMiles {
     private ABB<Usuario> usuarios;
@@ -16,6 +17,13 @@ public class AirMiles implements SistemaAirMiles {
         int millasCanjeadas;
         int millasTransferidas;
         int posicionHeap;
+
+        /*Agregamos Esto de idea */
+        Usuario recibioDe;
+        Usuario mandoA;
+        boolean esExclusivo;
+        Usuario esExclusivoCon;
+        
       /* IDEA
         int cantidadContrapartes;
         Usuario parejaExclusiva ;
@@ -34,6 +42,12 @@ public class AirMiles implements SistemaAirMiles {
                 this.parejaExclusiva = null;
                 this.handleParejaExclusiva = null;
             */
+
+            /* Agregamos esto como Idea*/
+            this.esExclusivo = true;
+            this.esExclusivoCon = null;
+            this.mandoA = null;
+            this.recibioDe = null;
 
         }
         
@@ -206,6 +220,32 @@ public class AirMiles implements SistemaAirMiles {
         heapMillas.actualizar(u_origen); //O(logU)
         heapMillas.actualizar(u_destino); //O(logU)
         // O(logU)
+
+
+        /** Tenemos que verificar si el que recibio y el que mando ya tenían a alguien o si no había nadie.
+         * <p>
+         * Además fijate si el tema es solo cuando se manda y recibe o hay alguno más que no estas viendo
+         * <p>
+         * la trasferencia ocurre una vez por llamada asi que puede quedar casos que 1 -> 2 y que uno(1) tenga recibido:null y que dos(2) tenga mandeA: null. Hay que contemplar esos casos
+         */
+
+        verificarRecibioDe(origen, destino);
+        verificarMandoA(origen, destino);
+        
+        // Chequeamos cada uno por si al final quedaron con distintos valores sus atributos de mandeA y recibeDe distintos
+        sigueSiendoExclusivo(origen);
+        sigueSiendoExclusivo(destino);
+        
+    
+        /**
+         * Se verifica que si despues de todo esto siguen los dos siendo excluviso entonces los los dos son pares
+         * Para este punto si origen mando a otro destino o si destino recibio de otro origen que no sea el primero entonces esExclusivo pasaba a false
+         * Entonces si hasta este punto siguen siendo los dos exclusivos es que ambos son exclusivosEntreSi
+         */
+        verificarSiSonPares(origen, destino);
+
+
+
     }
 
     private Usuario buscarUsuario(int id) { 
@@ -377,4 +417,125 @@ usuarios distintos, P < U/2. Por eso, la complejidad
 final es O(U).
         */
     }
+
+    void verificarRecibioDe(int mandoMiilas, int recibioMillas){
+        
+        /**
+         * 1 Caso: Verificamos si no había recibido de nadie entonces se pone de el quien le mando
+         * 2 Caso: Recibio antes de alguien pero tenemos que verificar de quien, si es la misma persona u otra.
+         * Primero verificamos si recibio algo de alguien antes o no? Mejor chequear primero si ya es false entonces lo otro lo podemos convertir en null
+         * Si verificamos primero si es false entonces todas tienen que ser false desde el inicio?
+         * 
+         */
+
+        Usuario origen =  buscarUsuario(mandoMiilas);
+        Usuario destino = buscarUsuario(recibioMillas);
+
+        
+        /**Todavía no entiendo el tema de null asi que no se como funciona el == con el tema de null, si es con números o como
+         * <p>
+         * Todos los estados van a empezar en esExclusivoCon = false;
+         * <p>
+         * Modificamos y movimos el caso de null primero asi no nos agarra un Null.pointerException
+        */
+        if (destino.recibioDe == null) {
+            destino.recibioDe = origen;
+        }
+
+
+        else if (destino.recibioDe.id != origen.id) { 
+            destino.esExclusivo = false;
+            origen.esExclusivo = false;   
+        }
+        
+        else if (destino.recibioDe.id == origen.id){
+            return;
+        }
+
+        else {
+            throw new UnknownError("Falto un caso que tenes que Chequear");
+        }
+
+    }
+
+    void verificarMandoA(int mandoMillas, int recibioMillas) {
+        Usuario elQueMando = buscarUsuario(mandoMillas);
+        Usuario elQueRecibio = buscarUsuario(recibioMillas);
+
+        /**
+         * Se repiten los tres(3) casos que usamos para verificarRecibioDe
+         * <p>
+         * Caso 1: Si mande a alguien y ya había mandado a otra persona
+         * Caso 2: No mande nunca y se guarda la primera persona a quien mande para despues comparar siempre
+         * <p>
+         * Modificamos y movimos el caso de null primero asi no nos agarra un Null.pointerException
+         */
+
+        if (elQueMando.mandoA == null) {
+            elQueMando.mandoA = elQueRecibio;
+        }
+
+        else if (elQueMando.mandoA.id != elQueRecibio.id) {
+            elQueMando.esExclusivo = false;
+            elQueRecibio.esExclusivo = false;
+        }
+
+        else if (elQueMando.mandoA.id == elQueRecibio.id) {
+            return;
+        }
+        
+        else {
+            throw new UnknownError("Falta chequear un caso que no estas viendo");
+        }
+    }
+
+
+    void sigueSiendoExclusivo(int id) {
+        Usuario usuario = buscarUsuario(id);
+        //Tenemos que chequear el caso Null primero 
+        if (usuario.recibioDe != null && usuario.mandoA != null && usuario.recibioDe.id != usuario.mandoA.id){usuario.esExclusivo = false;}
+    }
+
+
+    void verificarSiSonPares(int origen, int destino) {
+        Usuario QuienMando = buscarUsuario(origen);
+        Usuario QuienRecibio = buscarUsuario(destino);
+        
+        if(QuienMando.esExclusivo && QuienRecibio.esExclusivo) {
+        QuienRecibio.esExclusivoCon = QuienMando;
+        QuienMando.esExclusivoCon = QuienRecibio;
+        }
+
+        // Lo mas logico me parece al final de todo verificar aca dentro que si hay alguno que no es par entonces elimiinarlo
+
+        //Eliminar el exclusivoCon y convertimos en false por si acaso
+        else if (!QuienMando.esExclusivo || !QuienRecibio.esExclusivo) {
+        
+            QuienMando.esExclusivo = false;
+            QuienRecibio.esExclusivo = false;
+        
+            if (QuienRecibio.esExclusivoCon != null) {
+                Usuario exclusivoQuienRecibio = QuienRecibio.esExclusivoCon;
+                exclusivoQuienRecibio.esExclusivo = false;
+                exclusivoQuienRecibio.esExclusivoCon = null;
+                QuienRecibio.esExclusivoCon = null;
+            }
+
+
+            if (QuienMando.esExclusivoCon != null){
+                Usuario exclusivoQuienMando = QuienMando.esExclusivoCon;
+                exclusivoQuienMando.esExclusivoCon = null;
+                exclusivoQuienMando.esExclusivo = false;
+                QuienMando.esExclusivoCon = null;
+            }
+
+     
+
+        }
+    }
+
+
+    //ME FALTA EL TEMA DEL HANDLE Y CONECTARLO CON LA LISTA ENLAZADA PERO PRIEMRO QUIERO PREGUNTAR BIEN CUAL ERA EL TEMA DEL HANDLE QUE EL CONSDIERABA QUE PODÍA ESTAR ENCAPSULADO
+    
+
 }

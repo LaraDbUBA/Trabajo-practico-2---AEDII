@@ -8,21 +8,37 @@ public class DegubMain {
      * Recomiendo aunque sea tener algunos methodos básicos completos 
      */
 
+    
+
     public static void main(String[] args) {
         AirMiles am = new AirMiles();
         
+
+        /**
+         * Los siguientes 5 van a ganar millas pero a base de referir a otras personas
+         */
         am.registrarUsuario(1);
-        am.registrarUsuarioConReferidor(2, 1);
-        // Vemos que pasa con el tema de registrador usuarios y vamos a ver los saldos
+        am.registrarUsuario(2);
+        am.registrarUsuario(3);
+        am.registrarUsuario(4);
+        am.registrarUsuario(5);
+        
+        /* Personas referidas */
 
-        double res = am.consultarSaldo(2);
-        double resRef = am.consultarSaldo(1);
+        am.registrarUsuarioConReferidor(6, 1);
+        am.registrarUsuarioConReferidor(7, 2);
+        am.registrarUsuarioConReferidor(8, 3);
+        am.registrarUsuarioConReferidor(9, 4);
+        am.registrarUsuarioConReferidor(10, 5);
+        
+        // Ahora probamos los casos de las transferencias. 
 
+        am.transferirMillas(1, 6, 100); // 1 -> 6, 100 millas -> 400 | 600
+        System.out.println(am.consultarSaldo(1));
+        System.out.println(am.consultarSaldo(6));
+        am.verificarRecibioDe(1, 6);
+        am.verificarMandoA(1, 6);
 
-    
-
-        System.out.println(res); //Debería devolver 500
-        System.out.println(resRef);
-
+        System.err.println();
     }
 }
