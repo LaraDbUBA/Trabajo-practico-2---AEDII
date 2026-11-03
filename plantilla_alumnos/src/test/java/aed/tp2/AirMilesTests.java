@@ -389,6 +389,37 @@ public class AirMilesTests {
         }
     }
 
+        @Test
+    void transferenciaRecibidaNoSumaATotales() {
+        am.registrarUsuario(1);
+        am.registrarUsuario(2);
+        am.acumularMillas(1, 9000, "NoPromo");
+        am.acumularMillas(2, 5000, "NoPromo");
+
+        // 2 recibe 6000: se suman a sus disponibles, pero no a sus totales (siguen en 5000)
+        am.transferirMillas(1, 2, 6000);
+        assertEquals(11000.0, am.consultarSaldo(2));
+        assertEquals("Bronce", am.consultarCategoria(2));
+        assertEquals(1, am.elMasAcumulador());
+        // Las millas transferidas sí cuentan para elMasCanjeador
+        assertEquals(1, am.elMasCanjeador());
+
+        // Sigue siendo Bronce: vuela 100 con factor 1.0
+        am.acumularMillas(2, 100, "NoPromo");
+        assertEquals(11100.0, am.consultarSaldo(2));
+    }
+
+    @Test
+    void finalizarPromocion() {
+        am.registrarUsuario(1);
+        am.iniciarPromocion("PromoVerano", 2.0);
+        am.acumularMillas(1, 100, "PromoVerano"); // 200
+        am.finalizarPromocion("PromoVerano");
+        am.acumularMillas(1, 100, "PromoVerano"); // ya no está activa: factor 1.0
+        assertEquals(300.0, am.consultarSaldo(1));
+    }
+
+
     // sistema para el stress test (usuarios con ids 1..maxId)
     private static class Modelo {
         int registrados = 0;
@@ -535,5 +566,28 @@ public class AirMilesTests {
             assertFalse(visto[par[0]]);
             visto[par[0]] = visto[par[1]] = true;
         }
+    }
+//TEST AGREGADOS PARA PROBAR CASOS BORDE
+
+// Probar el borde de un usuario que llega justo a la categoría Oro (50000 millas)
+@Test
+    void millasCategoriaOro() {
+        am.registrarUsuario(1);
+        
+        am.acumularMillas(1, 50000, "NoPromo");
+        assertEquals("Oro", am.consultarCategoria(1));
+    }
+
+// Subir categoría con bono referidor
+@Test
+    void subeConBonoReferidor() {
+        am.registrarUsuario(1);
+        
+        am.acumularMillas(1, 9500, "NoPromo");
+        assertEquals("Bronce", am.consultarCategoria(1));
+
+        am.registrarUsuarioConReferidor(2,1);
+        assertEquals("Bronce", am.consultarCategoria(2));
+        assertEquals("Plata", am.consultarCategoria(1));
     }
 }
