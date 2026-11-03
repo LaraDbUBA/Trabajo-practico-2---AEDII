@@ -590,4 +590,19 @@ public class AirMilesTests {
         assertEquals("Bronce", am.consultarCategoria(2));
         assertEquals("Plata", am.consultarCategoria(1));
     }
+
+@Test
+    void elMasCanjeadorUnoCanjeyOtroTransferencia() {
+        am.registrarUsuario(1);
+        am.acumularMillas(1, 100, "NoPromo");
+        am.registrarUsuario(2);
+        am.acumularMillas(2, 100, "NoPromo");
+
+
+        am.canjearMillas(1, 50);
+        am.transferirMillas(2,1, 50);
+
+        int res = am.elMasCanjeador();
+        assertTrue(res == 1 || res == 2);
+    }
 }
