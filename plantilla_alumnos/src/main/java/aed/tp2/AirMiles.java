@@ -23,6 +23,8 @@ public class AirMiles implements SistemaAirMiles {
         boolean esExclusivo;
         Usuario esExclusivoCon;
 
+        // Handle<Relacion> handlePar; ?
+
         Usuario(int id){
             this.id = id;
             this.millasDisponibles = 0;
@@ -35,8 +37,14 @@ public class AirMiles implements SistemaAirMiles {
             /* Agregamos esto como Idea*/
             this.esExclusivo = true;
             this.esExclusivoCon = null;
+
+            /*Esto hay que sacarlo, segun lo que dijo el profe  */
             this.mandoA = null;
             this.recibioDe = null;
+
+            /* No falta este?
+            this.handlePar = null;?
+            */
 
         }
         
@@ -123,6 +131,11 @@ public class AirMiles implements SistemaAirMiles {
         if (referidor.millasTotales > maxAcumulador.millasTotales){maxAcumulador = referidor;}
 
         //Falta agregar el caso Null?
+        /*
+        Si con caso null te referis a como se actualiza el maxAcumulador, entonces no 
+        porque si tenes un usuario referidor significa que ya registraste un usuario y ya preguntaste si
+        es null
+        */
         
     }
 
@@ -231,7 +244,7 @@ public class AirMiles implements SistemaAirMiles {
          */
         verificarSiSonPares(origen, destino);
 
-
+// Yo lo que digo es que todo eso se puede simplificar en una sola funcion
 
     }
 
@@ -337,7 +350,7 @@ usuarios distintos, P < U/2. Por eso, la complejidad
 final es O(U).
         */
     }
-
+/*En todo lo que sigue no hay que poner un PRIVATE?  */
     void verificarRecibioDe(int mandoMiilas, int recibioMillas){
         
         /**
@@ -459,3 +472,33 @@ final es O(U).
     
 
 }
+
+/*
+mi humilde idea,
+para no tener que usar los atributos de mandoA recibioDe se me ocurrio
+
+- Cuando se realiza TRANFERIRMILLAS, al final de todo, digamos que se "actualiza la relacion",
+llamemosla "actualizarRelacion" para no escribir tanto,
+- En actualizarRelacion primero tendria que actualizar la exclusividad, es decir
+me fijo si esExclusivoCon es otro usuario para el usuario1 y para el usuario2 **
+- Si en uno detecta que siguen siendo exclusivos no pasa nada, perooo, si en el otro encuentra otra relacion
+tendria que eliminar a la pareja (si es que esta) de la lista
+- Entonces primero elimina a la pareja de la lista y luego pone el handlePar en null (en ambos)
+- Si despues de todo eso, no se elimina nada (o sea por ahora son fieles), entonces me pregunto si 
+coinciden entre si y si su handle es null, si sí, me hago una nueva relacion y agrego el handle, 
+le asigno a los dos usuarios ese handle.
+
+
+** Aca desarrollo un poco mas como seria chequear la exclusividad en este caso
+Si el usuario no es exclusivo de por si, no hago nada
+Si el usuario no es eclusivo con nadie, entonces le asigno el otro usuario
+Seria la primera vez que hay relacion 
+Si el usuario es exclusivo con alguien pero es alguien distinto, entonces se borra el par
+(porque si son exclusivos entonces existe par)
+
+Cuestion, las funciones anteriores de chequear y demas para mi pueden resumirse
+ponele
+en una que actualice la relacion
+y dentro de esa una que chequee la exclusividad y dentro de esa una que borre la relacion de ser necesario
+
+*/

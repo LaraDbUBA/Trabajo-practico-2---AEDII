@@ -104,6 +104,12 @@ Para poder actualizar eficientemente la prioridad de un usuario cuando cambia su
 
 Para obtener los primeros $N$ usuarios del ranking, se extrae el máximo sucesivamente y se guardan temporalmente los usuarios extraídos. Al finalizar, se los vuelve a insertar para conservar el contenido original del heap. Por lo tanto, obtener el ranking tiene complejidad $O(N\log U)$, suponiendo que $N$ no supera la cantidad de usuarios registrados. Si se solicitan más usuarios de los que existen, se devuelven únicamente los disponibles.
 
+\subsection{ListaEnlazada}
+
+Para obtener todos aquellos pares que tienen relación exclusiva, se incorporó una ListaEnlazada. Para ello, se decidió que los usuarios tengan estos atributos: \textit{esExclusivo, esExclusivoCon, handlePar.}  El handle permite eliminar la relacion de la lista si se deja de cumplir la condición de exclusividad. 
+
+Por otro lado, paresTransferidores tiene complejidad $O(U)$ pues recorre una vez la lista y construye una matriz? de ids, y como cada usuario puede pertencer una sola vez, entonces la cantidad de relaciones no supera $U/2$, por lo tanto la complejidad es de $O(U/2)$ que es lo mismo que $O(U)$
+
 \subsection{Atributos auxiliares: \texttt{maxAcumulador} y \texttt{maxCanjeador}}
 
 Para cumplir con las complejidades $O(1)$ requeridas para consultar al usuario que más millas acumuló y al que más millas canjeó o transfirió, se agregaron dos referencias auxiliares: \texttt{maxAcumulador} y \texttt{maxCanjeador}.
@@ -136,7 +142,7 @@ Eliminar una promoción & $O(|L|)$ \\
 Consultar el máximo acumulador & $O(1)$ \\
 Consultar el máximo canjeador & $O(1)$ \\
 Obtener los primeros $N$ usuarios del ranking & $O(N\log U)$ \\
-Obtener los pares de transferidores exclusivos & completar \\
+Obtener los pares de transferidores exclusivos & $O(U)$ \\
 \hline
 \end{tabular}
 \end{center}

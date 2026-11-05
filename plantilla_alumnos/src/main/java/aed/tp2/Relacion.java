@@ -6,8 +6,11 @@ public class Relacion implements Comparable<Relacion> {
 
     private boolean menorAMayor;
     private boolean mayorAMenor;
-
-    Handle<Relacion> handleExclusivo;
+/*
+Si el handle lo ponemos para usuario no hace falta que relacion
+tenga su propio handle
+*/
+    Handle<Relacion> handleExclusivo; // o sea este volaria, el resto queda igual
 
     public Relacion(int id1, int id2) {
         if (id1 < id2) {
