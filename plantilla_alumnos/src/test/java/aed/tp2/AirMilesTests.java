@@ -15,7 +15,6 @@ public class AirMilesTests {
     @Test
     void crearSistema() {
         assertNotNull(am);
-        //estos no deberian ser null? 
         assertEquals(-1, am.elMasAcumulador());
         assertEquals(-1, am.elMasCanjeador());
         assertEquals(0, am.paresTransferidoresExclusivos().length);
@@ -605,4 +604,238 @@ public class AirMilesTests {
         int res = am.elMasCanjeador();
         assertTrue(res == 1 || res == 2);
     }
+
+
+
+
+@Test
+void canjearTodoElSaldo() {
+    am.registrarUsuario(1);
+    am.acumularMillas(1, 500, "NoPromo");
+
+    am.canjearMillas(1, 500);
+
+    assertEquals(0.0, am.consultarSaldo(1));
+    assertEquals(1, am.elMasCanjeador());
+}
+
+
+
+@Test
+void transferirTodoElSaldo() {
+    am.registrarUsuario(1);
+    am.registrarUsuario(2);
+
+    am.acumularMillas(1, 500, "NoPromo");
+    am.transferirMillas(1, 2, 500);
+
+    assertEquals(0.0, am.consultarSaldo(1));
+    assertEquals(500.0, am.consultarSaldo(2));
+}
+
+@Test
+void transferenciaMutua() {
+    am.registrarUsuario(1);
+    am.registrarUsuario(2);
+
+    am.acumularMillas(1, 500, "NoPromo");
+    am.acumularMillas(2, 500, "NoPromo");
+
+    am.transferirMillas(1, 2, 100);
+    am.transferirMillas(2, 1, 50);
+
+    int[][] pares = am.paresTransferidoresExclusivos();
+
+    assertEquals(1, pares.length);
+    assertTrue(
+        (pares[0][0] == 1 && pares[0][1] == 2) ||
+        (pares[0][0] == 2 && pares[0][1] == 1)
+    );
+}
+
+@Test
+void reiniciarPromocion() {
+    am.registrarUsuario(1);
+
+    am.iniciarPromocion("Promo", 3.0);
+    am.acumularMillas(1, 100, "Promo");
+
+    am.finalizarPromocion("Promo");
+
+    am.iniciarPromocion("Promo", 2.0);
+    am.acumularMillas(1, 100, "Promo");
+
+    assertEquals(500.0, am.consultarSaldo(1));
+}
+@Test
+void promocionConTopeExacto() {
+    am.registrarUsuario(1);
+    am.iniciarPromocionConTope("Flash", 2.0, 200);
+
+    am.acumularMillas(1, 100, "Flash");
+    assertEquals(200.0, am.consultarSaldo(1));
+
+    am.acumularMillas(1, 50, "Flash");
+    assertEquals(250.0, am.consultarSaldo(1));
+}
+
+@Test
+void rankingConCeroUsuarios() {
+    assertEquals(0, am.rankingMillas(5).length);
+}
+@Test
+void rankingConNuloOCero() {
+    am.registrarUsuario(1);
+
+    assertEquals(0, am.rankingMillas(0).length);
+}
+
+@Test
+void rankingConNMayorALosUsuarios() {
+    am.registrarUsuario(1);
+    am.registrarUsuario(2);
+
+    assertEquals(2, am.rankingMillas(100).length);
+}
+
+@Test
+void paresExclusivosSinTransferencias() {
+    am.registrarUsuario(1);
+
+    assertEquals(0, am.paresTransferidoresExclusivos().length);
+}
+
+@Test
+void unUsuarioTransfiereADosPersonas() {
+    for (int i = 1; i <= 3; i++) {
+        am.registrarUsuario(i);
+    }
+
+    am.acumularMillas(1, 1000, "NoPromo");
+
+    am.transferirMillas(1, 2, 100);
+    assertEquals(1, am.paresTransferidoresExclusivos().length);
+
+    am.transferirMillas(1, 3, 100);
+    assertEquals(0, am.paresTransferidoresExclusivos().length);
+}
+
+@Test
+void romperUnParNoAfectaAlOtro() {
+    for (int i = 1; i <= 5; i++) {
+        am.registrarUsuario(i);
+    }
+
+    am.acumularMillas(1, 1000, "NoPromo");
+    am.acumularMillas(3, 1000, "NoPromo");
+    am.acumularMillas(5, 1000, "NoPromo");
+
+    am.transferirMillas(1, 2, 100);
+    am.transferirMillas(3, 4, 100);
+
+    assertEquals(2, am.paresTransferidoresExclusivos().length);
+
+    // Rompe únicamente el par 1-2
+    am.transferirMillas(1, 5, 100);
+
+    int[][] pares = am.paresTransferidoresExclusivos();
+
+    assertEquals(1, pares.length);
+    assertTrue(
+        (pares[0][0] == 3 && pares[0][1] == 4) ||
+        (pares[0][0] == 4 && pares[0][1] == 3)
+    );
+}
+
+@Test
+void transferenciasMutuasNoDuplicanPar() {
+    am.registrarUsuario(1);
+    am.registrarUsuario(2);
+
+    am.acumularMillas(1, 1000, "NoPromo");
+    am.acumularMillas(2, 1000, "NoPromo");
+
+    am.transferirMillas(1, 2, 100);
+    am.transferirMillas(2, 1, 100);
+
+    int[][] pares = am.paresTransferidoresExclusivos();
+
+    assertEquals(1, pares.length);
+}
+
+@Test
+void terceroRompeParExclusivo() {
+    for (int i = 1; i <= 3; i++) {
+        am.registrarUsuario(i);
+    }
+
+    am.acumularMillas(1, 1000, "NoPromo");
+
+    am.transferirMillas(1, 2, 100);
+
+    assertEquals(1, am.paresTransferidoresExclusivos().length);
+
+    am.transferirMillas(2, 3, 50);
+
+    assertEquals(0, am.paresTransferidoresExclusivos().length);
+}
+
+@Test
+void usuarioRecibeDeDosPersonas() {
+    for (int i = 1; i <= 3; i++) {
+        am.registrarUsuario(i);
+    }
+
+    am.acumularMillas(1, 1000, "NoPromo");
+    am.acumularMillas(2, 1000, "NoPromo");
+
+    am.transferirMillas(1, 3, 100);
+    assertEquals(1, am.paresTransferidoresExclusivos().length);
+
+    am.transferirMillas(2, 3, 100);
+
+    assertEquals(0, am.paresTransferidoresExclusivos().length);
+}
+@Test
+void paresExclusivosInmutablesAnteConsultas() {
+    am.registrarUsuario(1);
+    am.registrarUsuario(2);
+
+    am.acumularMillas(1, 1000, "NoPromo");
+    am.transferirMillas(1, 2, 100);
+
+    int[][] primera = am.paresTransferidoresExclusivos();
+    int[][] segunda = am.paresTransferidoresExclusivos();
+    int[][] tercera = am.paresTransferidoresExclusivos();
+
+    assertEquals(1, primera.length);
+    assertEquals(1, segunda.length);
+    assertEquals(1, tercera.length);
+}
+
+@Test
+void ningunUsuarioPerteneceADosParesExclusivos() {
+    for (int i = 1; i <= 6; i++) {
+        am.registrarUsuario(i);
+    }
+
+    for (int i = 1; i <= 5; i += 2) {
+        am.acumularMillas(i, 1000, "NoPromo");
+        am.transferirMillas(i, i + 1, 100);
+    }
+
+    int[][] pares = am.paresTransferidoresExclusivos();
+
+    boolean[] vistos = new boolean[7];
+
+    assertEquals(3, pares.length);
+
+    for (int[] par : pares) {
+        assertFalse(vistos[par[0]]);
+        assertFalse(vistos[par[1]]);
+
+        vistos[par[0]] = true;
+        vistos[par[1]] = true;
+    }
+}
 }

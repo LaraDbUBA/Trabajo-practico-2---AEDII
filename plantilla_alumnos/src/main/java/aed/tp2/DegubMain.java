@@ -36,8 +36,8 @@ public class DegubMain {
         am.transferirMillas(1, 6, 100); // 1 -> 6, 100 millas -> 400 | 600
         System.out.println(am.consultarSaldo(1));
         System.out.println(am.consultarSaldo(6));
-        am.verificarRecibioDe(1, 6);
-        am.verificarMandoA(1, 6);
+       // am.verificarRecibioDe(1, 6);
+        //am.verificarMandoA(1, 6);
 
         System.err.println();
     }

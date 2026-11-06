@@ -89,8 +89,8 @@ public class Trie {
     public void eliminar(String nombre) {
         NodoTrie nodo = obtenerNodo(nombre);
 
-        if (nodo != null) {
-            nodo.promocion = null;
+        if (nodo != null && nodo.promocion != null) {
+            nodo.promocion.factor = 1;
         }
     }
 

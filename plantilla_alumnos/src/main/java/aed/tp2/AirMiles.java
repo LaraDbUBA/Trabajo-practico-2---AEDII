@@ -7,23 +7,21 @@ public class AirMiles implements SistemaAirMiles {
     private Usuario maxCanjeador;
     private MaxHeap<Usuario> heapMillas;
     private Trie promociones;
-    // private ListaEnlazada<Relacion> paresExclusivos; <- Idea
+    private ListaEnlazada<Relacion> paresExclusivos; 
     
     private class Usuario implements Comparable<Usuario>{
         int id;
-        int millasDisponibles; // CAMBIAR A DOUBLE
-        int millasTotales; // CAMBIAR A DOUBLE
-        int millasCanjeadas; // CAMBIAR A DOUBLE
-        int millasTransferidas; // CAMBIAR A DOUBLE
+        double millasDisponibles; 
+        double millasTotales; 
+        double millasCanjeadas; 
+        double millasTransferidas; 
         int posicionHeap;
 
-        /*Agregamos Esto de idea */
-        Usuario recibioDe;
-        Usuario mandoA;
-        boolean esExclusivo;
-        Usuario esExclusivoCon;
 
-        // Handle<Relacion> handlePar; ?
+        
+        int esExclusivoCon; // tiene que ser el id
+
+        Handle<Relacion> handlePar; 
 
         Usuario(int id){
             this.id = id;
@@ -35,16 +33,11 @@ public class AirMiles implements SistemaAirMiles {
 
 
             /* Agregamos esto como Idea*/
-            this.esExclusivo = true;
-            this.esExclusivoCon = null;
-
-            /*Esto hay que sacarlo, segun lo que dijo el profe  */
-            this.mandoA = null;
-            this.recibioDe = null;
-
-            /* No falta este?
-            this.handlePar = null;?
-            */
+            
+            this.esExclusivoCon = -2;
+            
+            this.handlePar = null;
+            
 
         }
         
@@ -59,11 +52,11 @@ public class AirMiles implements SistemaAirMiles {
         usuarios = new ABB<>(); //O(1)
         promociones = new Trie(); // O(1)
         promociones.insertar("NoPromo", 1.0);
-       // paresExclusivos = new ListaEnlazada<>();
+        paresExclusivos = new ListaEnlazada<>();
         heapMillas = new MaxHeap<Usuario>(new MaxHeap.Operaciones<Usuario>() {
             @Override
             public int comparar(Usuario a, Usuario b) {
-                return Integer.compare(
+                return Double.compare(
                     a.millasDisponibles,
                     b.millasDisponibles
                 );
@@ -153,7 +146,7 @@ public class AirMiles implements SistemaAirMiles {
 
         return res; // O(1)
     }
-    private String categoriaPorMillas(int millas) {
+    private String categoriaPorMillas(double millas) {
         String res;
 
         if (millas < 10000) {
@@ -195,6 +188,7 @@ public class AirMiles implements SistemaAirMiles {
 
 
     public void canjearMillas(int id, double cantidad) {
+        
         Usuario u = buscarUsuario(id); // O(logU)
         u.millasDisponibles -= cantidad;
         u.millasCanjeadas += cantidad;
@@ -203,6 +197,52 @@ public class AirMiles implements SistemaAirMiles {
         }
         heapMillas.actualizar(u); // O(logU)
         //O(logU)
+    }
+    private void eliminarPareja(Usuario usuario){
+        if (usuario.handlePar != null){
+            int id_otro = usuario.esExclusivoCon;
+            Usuario otro = buscarUsuario(id_otro); //O(logU), no me cambia nada en mi implemetacion de transferirMillas
+            usuario.handlePar.eliminar();
+            usuario.handlePar = null;
+            otro.handlePar = null;
+            otro.esExclusivoCon = -1;
+            
+
+        }
+    }
+
+    private void actualizarExclusividad(Usuario usuario1, Usuario usuario2){
+        if (usuario1.esExclusivoCon == -1){
+            return;
+        }
+        
+        // un entero no puede ser null, asignamos un valor que indique que nunca se paso con nadie
+        // por ejemplo -2
+        if (usuario1.esExclusivoCon == -2){
+            usuario1.esExclusivoCon = usuario2.id;
+        }
+
+        if (usuario1.esExclusivoCon != usuario2.id){
+            eliminarPareja(usuario1);
+            eliminarPareja(usuario2);
+            usuario1.esExclusivoCon = -1;
+            usuario2.esExclusivoCon = -1;
+        }
+    }
+    
+    private void actualizarRelacion(Usuario origen, Usuario destino){
+        actualizarExclusividad(origen, destino);
+        actualizarExclusividad(destino, origen);
+
+        if (origen.esExclusivoCon == destino.id && 
+            destino.esExclusivoCon == origen.id &&
+            origen.handlePar == null &&
+            destino.handlePar == null){
+            Relacion relacion = new Relacion(origen.id, destino.id);
+            Handle<Relacion> handle =  paresExclusivos.agregarAtras(relacion);
+            origen.handlePar = handle;
+            destino.handlePar = handle;  
+        }
     }
 
     public void transferirMillas(int origen, int destino, double cantidad) {
@@ -229,22 +269,22 @@ public class AirMiles implements SistemaAirMiles {
          * la trasferencia ocurre una vez por llamada asi que puede quedar casos que 1 -> 2 y que uno(1) tenga recibido:null y que dos(2) tenga mandeA: null. Hay que contemplar esos casos
          */
 
-        verificarRecibioDe(origen, destino);
-        verificarMandoA(origen, destino);
+       // verificarRecibioDe(origen, destino);
+        //verificarMandoA(origen, destino);
         
         // Chequeamos cada uno por si al final quedaron con distintos valores sus atributos de mandeA y recibeDe distintos
-        sigueSiendoExclusivo(origen);
-        sigueSiendoExclusivo(destino);
-        
+        //sigueSiendoExclusivo(origen);
+        //sigueSiendoExclusivo(destino);
     
         /**
          * Se verifica que si despues de todo esto siguen los dos siendo excluviso entonces los los dos son pares
          * Para este punto si origen mando a otro destino o si destino recibio de otro origen que no sea el primero entonces esExclusivo pasaba a false
          * Entonces si hasta este punto siguen siendo los dos exclusivos es que ambos son exclusivosEntreSi
          */
-        verificarSiSonPares(origen, destino);
+        //verificarSiSonPares(origen, destino);
 
 // Yo lo que digo es que todo eso se puede simplificar en una sola funcion
+        actualizarRelacion(u_origen, u_destino);
 
     }
 
@@ -325,8 +365,6 @@ public class AirMiles implements SistemaAirMiles {
 
     
     public int[][] paresTransferidoresExclusivos() {
-        throw new UnsupportedOperationException("Sin implementar");
-        /*
         
         int cantidad = paresExclusivos.longitud();
         int[][] resultado = new int[cantidad][2];
@@ -344,33 +382,36 @@ public class AirMiles implements SistemaAirMiles {
         }
 
         return resultado;
-Sea P la longitud de pares exclusivos
-El recorrido es O(P), y como cada pareja involucra dos 
-usuarios distintos, P < U/2. Por eso, la complejidad 
-final es O(U).
-        */
     }
-/*En todo lo que sigue no hay que poner un PRIVATE?  */
-    void verificarRecibioDe(int mandoMiilas, int recibioMillas){
+} 
+            /*Sea P la longitud de pares exclusivos
+    El recorrido es O(P), y como cada pareja involucra dos 
+    usuarios distintos, P < U/2. Por eso, la complejidad 
+    final es O(U). */
+
         
-        /**
+    
+/*En todo lo que sigue no hay que poner un PRIVATE?
+        void verificarRecibioDe(int mandoMiilas, int recibioMillas){
+        
+        
          * 1 Caso: Verificamos si no había recibido de nadie entonces se pone de el quien le mando
          * 2 Caso: Recibio antes de alguien pero tenemos que verificar de quien, si es la misma persona u otra.
          * Primero verificamos si recibio algo de alguien antes o no? Mejor chequear primero si ya es false entonces lo otro lo podemos convertir en null
          * Si verificamos primero si es false entonces todas tienen que ser false desde el inicio?
          * 
-         */
+         
 
         Usuario origen =  buscarUsuario(mandoMiilas);
         Usuario destino = buscarUsuario(recibioMillas);
 
         
-        /**Todavía no entiendo el tema de null asi que no se como funciona el == con el tema de null, si es con números o como
+        Todavía no entiendo el tema de null asi que no se como funciona el == con el tema de null, si es con números o como
          * <p>
          * Todos los estados van a empezar en esExclusivoCon = false;
          * <p>
          * Modificamos y movimos el caso de null primero asi no nos agarra un Null.pointerException
-        */
+        
         if (destino.recibioDe == null) {
             destino.recibioDe = origen;
         }
@@ -395,14 +436,14 @@ final es O(U).
         Usuario elQueMando = buscarUsuario(mandoMillas);
         Usuario elQueRecibio = buscarUsuario(recibioMillas);
 
-        /**
+        
          * Se repiten los tres(3) casos que usamos para verificarRecibioDe
          * <p>
          * Caso 1: Si mande a alguien y ya había mandado a otra persona
          * Caso 2: No mande nunca y se guarda la primera persona a quien mande para despues comparar siempre
          * <p>
          * Modificamos y movimos el caso de null primero asi no nos agarra un Null.pointerException
-         */
+         
 
         if (elQueMando.mandoA == null) {
             elQueMando.mandoA = elQueRecibio;
@@ -471,7 +512,8 @@ final es O(U).
     //ME FALTA EL TEMA DEL HANDLE Y CONECTARLO CON LA LISTA ENLAZADA PERO PRIEMRO QUIERO PREGUNTAR BIEN CUAL ERA EL TEMA DEL HANDLE QUE EL CONSDIERABA QUE PODÍA ESTAR ENCAPSULADO
     
 
-}
+} */
+    
 
 /*
 mi humilde idea,
@@ -501,4 +543,11 @@ ponele
 en una que actualice la relacion
 y dentro de esa una que chequee la exclusividad y dentro de esa una que borre la relacion de ser necesario
 
+
+-- Corrección nueva:
+La idea no es usar esExclusivo, sino usar solamente esExclusivoCon y cuando es "false" se guarda con -1
 */
+
+
+
+
