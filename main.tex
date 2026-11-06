@@ -80,7 +80,7 @@ ya que el árbol utilizado no realiza balanceo automático.
 
 Para representar el conjunto de usuarios se eligió un árbol binario de búsqueda (ABB) ordenado por el ID de cada usuario. De esta manera, cada usuario puede localizarse a partir de su identificador sin necesidad de recorrer todos los usuarios registrados.
 
-Como nuestra implementación mantiene el árbol balanceado, buscar un usuario e insertar uno nuevo tienen complejidad $O(\log U)$, donde $U$ es la cantidad de usuarios registrados. Esta estructura también permite acceder al usuario correspondiente para realizar operaciones como consultar su saldo, acumular millas, canjear millas o transferirlas. En todos estos casos, la búsqueda inicial cuesta $O(\log U)$ y las modificaciones de los atributos del usuario cuestan $O(1)$, sin considerar otras estructuras que deban actualizarse.
+Como nuestra implementación mantiene el árbol balanceado, buscar un usuario e insertar uno nuevo tienen complejidad $O(\log U)$. Esta estructura también permite acceder al usuario correspondiente para realizar operaciones como consultar su saldo, acumular millas, canjear millas o transferirlas. En todos estos casos, la búsqueda inicial cuesta $O(\log U)$ y las modificaciones de los atributos del usuario cuestan $O(1)$, sin considerar otras estructuras que deban actualizarse.
 
 Por lo tanto, el ABB permite cumplir con las complejidades requeridas para las operaciones de acceso y registro de usuarios.
 
@@ -90,7 +90,7 @@ Para representar las promociones se eligió un Trie, ya que permite almacenar y 
 
 Cada promoción almacena su factor multiplicador y, cuando corresponde, un tope de millas. En este último caso, también se registra cuántas millas se otorgaron hasta el momento mediante esa promoción, lo que permite controlar que no se supere el límite establecido.
 
-Las operaciones de búsqueda, inserción y eliminación de una promoción tienen complejidad $O(|L|)$, donde $|L|$ es la longitud de su nombre. Esta complejidad depende de la cantidad de caracteres que se deben recorrer y no de la cantidad total de promociones almacenadas.
+Las operaciones de búsqueda, inserción y eliminación de una promoción tienen complejidad $O(|L|)$. Esta complejidad depende de la cantidad de caracteres que se deben recorrer y no de la cantidad total de promociones almacenadas.
 
 El Trie se utiliza, entre otras operaciones, al acumular millas, ya que permite obtener la promoción correspondiente y calcular las millas que se otorgarán según su factor y su tope, así como también iniciar o finalizar una promoción, con o sin tope. Por eso, la búsqueda de la promoción durante una acumulación agrega un costo de $O(|L|)$.
 
@@ -106,9 +106,9 @@ Para obtener los primeros $N$ usuarios del ranking, se extrae el máximo sucesiv
 
 \subsection{ListaEnlazada}
 
-Para obtener todos aquellos pares que tienen relación exclusiva, se incorporó una ListaEnlazada. Para ello, se decidió que los usuarios tengan estos atributos: \textit{esExclusivo, esExclusivoCon, handlePar.}  El handle permite eliminar la relacion de la lista si se deja de cumplir la condición de exclusividad. 
+Para obtener todos aquellos pares que tienen relación exclusiva, se incorporó una ListaEnlazada. Para ello, se decidió que los usuarios tengan estos atributos: \textit{ esExclusivoCon, handlePar.}  El handle permite eliminar la relacion de la lista si se deja de cumplir la condición de exclusividad. 
 
-Por otro lado, paresTransferidores tiene complejidad $O(U)$ pues recorre una vez la lista y construye una matriz? de ids, y como cada usuario puede pertencer una sola vez, entonces la cantidad de relaciones no supera $U/2$, por lo tanto la complejidad es de $O(U/2)$ que es lo mismo que $O(U)$
+Por otro lado, paresTransferidores tiene complejidad $O(U)$ pues recorre una vez la lista y construye una matriz de ids, y como cada usuario puede pertencer una sola vez, entonces la cantidad de relaciones no supera $U/2$, por lo tanto la complejidad es de $O(U/2)$ que es lo mismo que $O(U)$
 
 \subsection{Atributos auxiliares: \texttt{maxAcumulador} y \texttt{maxCanjeador}}
 
@@ -116,13 +116,13 @@ Para cumplir con las complejidades $O(1)$ requeridas para consultar al usuario q
 
 Ambas referencias apuntan directamente a los objetos de tipo \texttt{Usuario} que cumplen esas condiciones. De esta forma, no es necesario recorrer el ABB ni el heap para responder las consultas.
 
-Cuando se registra el primer usuario, se inicializan ambas referencias. Luego, cada vez que una operación modifica las millas relevantes de un usuario, se compara su nuevo valor con el del máximo almacenado y se actualiza la referencia si corresponde. Para \texttt{maxAcumulador} se consideran las millas totales acumuladas; para \texttt{maxCanjeador}, la suma de las millas canjeadas y transferidas, según el criterio de nuestra implementación.
+Cuando se registra el primer usuario, se inicializan ambas referencias. Luego, cada vez que una operación modifica las millas relevantes de un usuario, se compara su nuevo valor con el del máximo almacenado y se actualiza la referencia si corresponde. Para \texttt{maxAcumulador} se consideran las millas totales acumuladas; para \texttt{maxCanjeador}, la suma de las millas canjeadas y transferidas.
 
 La consulta de cualquiera de estos máximos tiene complejidad $O(1)$. La comparación y eventual actualización de la referencia también cuestan $O(1)$ una vez que se tiene acceso al usuario.
 
 \section{Resumen de complejidades}
 
-En la siguiente tabla se resumen las complejidades de las operaciones implementadas. Se considera $U$ como la cantidad de usuarios registrados, $|L|$ como la longitud del nombre de una promoción y $N$ como la cantidad de usuarios solicitados en el ranking.
+En la siguiente tabla se resumen las complejidades de las operaciones implementadas.
 
 \begin{center}
 \begin{tabular}{|l|c|}
@@ -146,7 +146,5 @@ Obtener los pares de transferidores exclusivos & $O(U)$ \\
 \hline
 \end{tabular}
 \end{center}
-
-Las complejidades de las operaciones sobre usuarios consideran el costo de buscar al usuario en el ABB. En las operaciones que modifican las millas disponibles también se debe actualizar su posición en el heap, lo que agrega un costo de $O(\log U)$ y no modifica el orden de complejidad indicado. En particular, acumular millas incluye además la búsqueda de la promoción en el Trie, por lo que su costo es $O(\log U + |L|)$.
 
 \end{document}

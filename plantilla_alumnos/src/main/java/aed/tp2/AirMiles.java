@@ -388,9 +388,7 @@ public class AirMiles implements SistemaAirMiles {
     El recorrido es O(P), y como cada pareja involucra dos 
     usuarios distintos, P < U/2. Por eso, la complejidad 
     final es O(U). */
-
-        
-    
+         
 /*En todo lo que sigue no hay que poner un PRIVATE?
         void verificarRecibioDe(int mandoMiilas, int recibioMillas){
         
