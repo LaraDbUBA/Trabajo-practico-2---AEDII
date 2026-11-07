@@ -16,8 +16,6 @@ public class AirMiles implements SistemaAirMiles {
         double millasCanjeadas; 
         double millasTransferidas; 
         int posicionHeap;
-
-        
         int esExclusivoCon; // tiene que ser el id
 
         Handle<Relacion> handlePar; 
@@ -29,12 +27,7 @@ public class AirMiles implements SistemaAirMiles {
             this.millasCanjeadas = 0;
             this.millasTransferidas = 0;
             this.posicionHeap = -1;
-
-
-            /* Agregamos esto como Idea*/
-            
             this.esExclusivoCon = -2;
-            
             this.handlePar = null;
             
 
@@ -121,13 +114,6 @@ public class AirMiles implements SistemaAirMiles {
 
         if (u.millasTotales > maxAcumulador.millasTotales){maxAcumulador = u;}
         if (referidor.millasTotales > maxAcumulador.millasTotales){maxAcumulador = referidor;}
-
-        //Falta agregar el caso Null?
-        /*
-        Si con caso null te referis a como se actualiza el maxAcumulador, entonces no 
-        porque si tenes un usuario referidor significa que ya registraste un usuario y ya preguntaste si
-        es null
-        */
         
     }
 
@@ -182,7 +168,7 @@ public class AirMiles implements SistemaAirMiles {
             maxAcumulador = u; // O(1)
         }
 
-        // Complejidad: O(log U + |L|), suponiendo que el ABB está balanceado.
+        // Complejidad: O(log U + |L|)
     }
 
 
@@ -259,31 +245,7 @@ public class AirMiles implements SistemaAirMiles {
         heapMillas.actualizar(u_origen); //O(logU)
         heapMillas.actualizar(u_destino); //O(logU)
         // O(logU)
-
-
-        /** Tenemos que verificar si el que recibio y el que mando ya tenían a alguien o si no había nadie.
-         * <p>
-         * Además fijate si el tema es solo cuando se manda y recibe o hay alguno más que no estas viendo
-         * <p>
-         * la trasferencia ocurre una vez por llamada asi que puede quedar casos que 1 -> 2 y que uno(1) tenga recibido:null y que dos(2) tenga mandeA: null. Hay que contemplar esos casos
-         */
-
-       // verificarRecibioDe(origen, destino);
-        //verificarMandoA(origen, destino);
-        
-        // Chequeamos cada uno por si al final quedaron con distintos valores sus atributos de mandeA y recibeDe distintos
-        //sigueSiendoExclusivo(origen);
-        //sigueSiendoExclusivo(destino);
-    
-        /**
-         * Se verifica que si despues de todo esto siguen los dos siendo excluviso entonces los los dos son pares
-         * Para este punto si origen mando a otro destino o si destino recibio de otro origen que no sea el primero entonces esExclusivo pasaba a false
-         * Entonces si hasta este punto siguen siendo los dos exclusivos es que ambos son exclusivosEntreSi
-         */
-        //verificarSiSonPares(origen, destino);
-
-// Yo lo que digo es que todo eso se puede simplificar en una sola funcion
-        actualizarRelacion(u_origen, u_destino);
+        actualizarRelacion(u_origen, u_destino); //O(logU)
 
     }
 
@@ -387,163 +349,7 @@ public class AirMiles implements SistemaAirMiles {
     El recorrido es O(P), y como cada pareja involucra dos 
     usuarios distintos, P < U/2. Por eso, la complejidad 
     final es O(U). */
-         
-/*En todo lo que sigue no hay que poner un PRIVATE?
-        void verificarRecibioDe(int mandoMiilas, int recibioMillas){
-        
-        
-         * 1 Caso: Verificamos si no había recibido de nadie entonces se pone de el quien le mando
-         * 2 Caso: Recibio antes de alguien pero tenemos que verificar de quien, si es la misma persona u otra.
-         * Primero verificamos si recibio algo de alguien antes o no? Mejor chequear primero si ya es false entonces lo otro lo podemos convertir en null
-         * Si verificamos primero si es false entonces todas tienen que ser false desde el inicio?
-         * 
-         
-
-        Usuario origen =  buscarUsuario(mandoMiilas);
-        Usuario destino = buscarUsuario(recibioMillas);
-
-        
-        Todavía no entiendo el tema de null asi que no se como funciona el == con el tema de null, si es con números o como
-         * <p>
-         * Todos los estados van a empezar en esExclusivoCon = false;
-         * <p>
-         * Modificamos y movimos el caso de null primero asi no nos agarra un Null.pointerException
-        
-        if (destino.recibioDe == null) {
-            destino.recibioDe = origen;
-        }
-
-
-        else if (destino.recibioDe.id != origen.id) { 
-            destino.esExclusivo = false;
-            origen.esExclusivo = false;   
-        }
-        
-        else if (destino.recibioDe.id == origen.id){
-            return;
-        }
-
-        else {
-            throw new UnknownError("Falto un caso que tenes que Chequear");
-        }
-
-    }
-
-    void verificarMandoA(int mandoMillas, int recibioMillas) {
-        Usuario elQueMando = buscarUsuario(mandoMillas);
-        Usuario elQueRecibio = buscarUsuario(recibioMillas);
-
-        
-         * Se repiten los tres(3) casos que usamos para verificarRecibioDe
-         * <p>
-         * Caso 1: Si mande a alguien y ya había mandado a otra persona
-         * Caso 2: No mande nunca y se guarda la primera persona a quien mande para despues comparar siempre
-         * <p>
-         * Modificamos y movimos el caso de null primero asi no nos agarra un Null.pointerException
-         
-
-        if (elQueMando.mandoA == null) {
-            elQueMando.mandoA = elQueRecibio;
-        }
-
-        else if (elQueMando.mandoA.id != elQueRecibio.id) {
-            elQueMando.esExclusivo = false;
-            elQueRecibio.esExclusivo = false;
-        }
-
-        else if (elQueMando.mandoA.id == elQueRecibio.id) {
-            return;
-        }
-        
-        else {
-            throw new UnknownError("Falta chequear un caso que no estas viendo");
-        }
-    }
-
-
-    void sigueSiendoExclusivo(int id) {
-        Usuario usuario = buscarUsuario(id);
-        //Tenemos que chequear el caso Null primero 
-        if (usuario.recibioDe != null && usuario.mandoA != null && usuario.recibioDe.id != usuario.mandoA.id){usuario.esExclusivo = false;}
-    }
-
-
-    void verificarSiSonPares(int origen, int destino) {
-        Usuario QuienMando = buscarUsuario(origen);
-        Usuario QuienRecibio = buscarUsuario(destino);
-        
-        if(QuienMando.esExclusivo && QuienRecibio.esExclusivo) {
-        QuienRecibio.esExclusivoCon = QuienMando;
-        QuienMando.esExclusivoCon = QuienRecibio;
-        }
-
-        // Lo mas logico me parece al final de todo verificar aca dentro que si hay alguno que no es par entonces elimiinarlo
-
-        //Eliminar el exclusivoCon y convertimos en false por si acaso
-        else if (!QuienMando.esExclusivo || !QuienRecibio.esExclusivo) {
-        
-            QuienMando.esExclusivo = false;
-            QuienRecibio.esExclusivo = false;
-        
-            if (QuienRecibio.esExclusivoCon != null) {
-                Usuario exclusivoQuienRecibio = QuienRecibio.esExclusivoCon;
-                exclusivoQuienRecibio.esExclusivo = false;
-                exclusivoQuienRecibio.esExclusivoCon = null;
-                QuienRecibio.esExclusivoCon = null;
-            }
-
-
-            if (QuienMando.esExclusivoCon != null){
-                Usuario exclusivoQuienMando = QuienMando.esExclusivoCon;
-                exclusivoQuienMando.esExclusivoCon = null;
-                exclusivoQuienMando.esExclusivo = false;
-                QuienMando.esExclusivoCon = null;
-            }
-
-     
-
-        }
-    }
-
-
-    //ME FALTA EL TEMA DEL HANDLE Y CONECTARLO CON LA LISTA ENLAZADA PERO PRIEMRO QUIERO PREGUNTAR BIEN CUAL ERA EL TEMA DEL HANDLE QUE EL CONSDIERABA QUE PODÍA ESTAR ENCAPSULADO
     
-
-} */
-    
-
-/*
-mi humilde idea,
-para no tener que usar los atributos de mandoA recibioDe se me ocurrio
-
-- Cuando se realiza TRANFERIRMILLAS, al final de todo, digamos que se "actualiza la relacion",
-llamemosla "actualizarRelacion" para no escribir tanto,
-- En actualizarRelacion primero tendria que actualizar la exclusividad, es decir
-me fijo si esExclusivoCon es otro usuario para el usuario1 y para el usuario2 **
-- Si en uno detecta que siguen siendo exclusivos no pasa nada, perooo, si en el otro encuentra otra relacion
-tendria que eliminar a la pareja (si es que esta) de la lista
-- Entonces primero elimina a la pareja de la lista y luego pone el handlePar en null (en ambos)
-- Si despues de todo eso, no se elimina nada (o sea por ahora son fieles), entonces me pregunto si 
-coinciden entre si y si su handle es null, si sí, me hago una nueva relacion y agrego el handle, 
-le asigno a los dos usuarios ese handle.
-
-
-** Aca desarrollo un poco mas como seria chequear la exclusividad en este caso
-Si el usuario no es exclusivo de por si, no hago nada
-Si el usuario no es eclusivo con nadie, entonces le asigno el otro usuario
-Seria la primera vez que hay relacion 
-Si el usuario es exclusivo con alguien pero es alguien distinto, entonces se borra el par
-(porque si son exclusivos entonces existe par)
-
-Cuestion, las funciones anteriores de chequear y demas para mi pueden resumirse
-ponele
-en una que actualice la relacion
-y dentro de esa una que chequee la exclusividad y dentro de esa una que borre la relacion de ser necesario
-
-
--- Corrección nueva:
-La idea no es usar esExclusivo, sino usar solamente esExclusivoCon y cuando es "false" se guarda con -1
-*/
 
 
 
