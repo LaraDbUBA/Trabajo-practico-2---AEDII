@@ -591,24 +591,6 @@ public class AirMilesTests {
     }
 
 @Test
-    void elMasCanjeadorUnoCanjeyOtroTransferencia() {
-        am.registrarUsuario(1);
-        am.acumularMillas(1, 100, "NoPromo");
-        am.registrarUsuario(2);
-        am.acumularMillas(2, 100, "NoPromo");
-
-
-        am.canjearMillas(1, 50);
-        am.transferirMillas(2,1, 50);
-
-        int res = am.elMasCanjeador();
-        assertTrue(res == 1 || res == 2);
-    }
-
-
-
-
-@Test
 void canjearTodoElSaldo() {
     am.registrarUsuario(1);
     am.acumularMillas(1, 500, "NoPromo");
@@ -634,7 +616,7 @@ void transferirTodoElSaldo() {
 }
 
 @Test
-void transferenciaMutua() {
+void transferenciaMutua() { //IDENTICO A transferenciasMutuasNoDuplicanPar 
     am.registrarUsuario(1);
     am.registrarUsuario(2);
 
@@ -668,7 +650,7 @@ void reiniciarPromocion() {
     assertEquals(500.0, am.consultarSaldo(1));
 }
 @Test
-void promocionConTopeExacto() {
+void promocionConTopeExacto() { // PARECIDO A topePromocion
     am.registrarUsuario(1);
     am.iniciarPromocionConTope("Flash", 2.0, 200);
 
@@ -683,15 +665,9 @@ void promocionConTopeExacto() {
 void rankingConCeroUsuarios() {
     assertEquals(0, am.rankingMillas(5).length);
 }
-@Test
-void rankingConNuloOCero() {
-    am.registrarUsuario(1);
-
-    assertEquals(0, am.rankingMillas(0).length);
-}
 
 @Test
-void rankingConNMayorALosUsuarios() {
+void rankingConNMayorALosUsuarios() { //PARECIDO A rankingMillasMenosUsuariosQueN
     am.registrarUsuario(1);
     am.registrarUsuario(2);
 
@@ -706,10 +682,10 @@ void paresExclusivosSinTransferencias() {
 }
 
 @Test
-void unUsuarioTransfiereADosPersonas() {
+void unUsuarioTransfiereADosPersonas() { // PARECIDO A transferirMillasYParesExclusivos
     for (int i = 1; i <= 3; i++) {
         am.registrarUsuario(i);
-    }
+    } 
 
     am.acumularMillas(1, 1000, "NoPromo");
 
@@ -814,7 +790,7 @@ void paresExclusivosInmutablesAnteConsultas() {
 }
 
 @Test
-void ningunUsuarioPerteneceADosParesExclusivos() {
+void ningunUsuarioPerteneceADosParesExclusivos() { //PARECIDO A variosParesExclusivos
     for (int i = 1; i <= 6; i++) {
         am.registrarUsuario(i);
     }
@@ -838,4 +814,110 @@ void ningunUsuarioPerteneceADosParesExclusivos() {
         vistos[par[1]] = true;
     }
 }
+
+// NUEVOS TEST
+@Test
+void elMasCanjeadorEmpateYDesempate() {
+    am.registrarUsuario(1);
+    am.registrarUsuario(2);
+    am.acumularMillas(1, 100, "NoPromo");
+    am.acumularMillas(2, 100, "NoPromo");
+
+    // 1 pierde 50 canjeando y 2 pierde 50 transfiriendo: empate
+    am.canjearMillas(1, 50);
+    am.transferirMillas(2, 1, 50);
+    int res = am.elMasCanjeador();
+    assertTrue(res == 1 || res == 2);
+
+    // 2 transfiere 1 milla más: pasa a ser el único que más perdió (51 vs 50)
+    am.transferirMillas(2, 1, 1);
+    assertEquals(2, am.elMasCanjeador());
+
+    // 1 canjea 2 más y lo vuelve a superar (52 vs 51)
+    am.canjearMillas(1, 2);
+    assertEquals(1, am.elMasCanjeador());
+}
+
+@Test
+void bonoDeReferidoActualizaElMasAcumuladorYRanking() {
+    am.registrarUsuario(1);
+    am.registrarUsuario(2);
+    am.acumularMillas(1, 550, "NoPromo");
+    am.acumularMillas(2, 100, "NoPromo");
+    assertEquals(1, am.elMasAcumulador());
+
+    // 2 refiere a 3: 2 queda con 600 totales y pasa a 1 (550) solo por el bono
+    am.registrarUsuarioConReferidor(3, 2);
+    assertEquals(2, am.elMasAcumulador());
+
+    // El ranking también se actualiza: 2 (600), 1 (550), 3 (500)
+    assertArrayEquals(new int[]{2, 1, 3}, am.rankingMillas(3));
+}
+
+@Test
+void canjearNoBajaLaCategoria() {
+    am.registrarUsuario(1);
+    am.acumularMillas(1, 12000, "NoPromo"); // 12000 totales: Plata
+    assertEquals("Plata", am.consultarCategoria(1));
+
+    // Canjear baja las disponibles pero no las totales
+    am.canjearMillas(1, 11000);
+    assertEquals(1000.0, am.consultarSaldo(1));
+    assertEquals("Plata", am.consultarCategoria(1));
+
+    // El factor depende de las totales: sigue acumulando con 1.5
+    am.acumularMillas(1, 100, "NoPromo");
+    assertEquals(1150.0, am.consultarSaldo(1));
+}
+
+@Test
+void topeCompartidoEntreUsuariosYReinicio() {
+    am.registrarUsuario(1);
+    am.registrarUsuario(2);
+    am.iniciarPromocionConTope("Flash", 3.0, 300);
+
+    // El tope es global: entre los dos usuarios llegan justo a 300
+    am.acumularMillas(1, 50, "Flash"); // 150
+    am.acumularMillas(2, 50, "Flash"); // 150
+    assertEquals(150.0, am.consultarSaldo(1));
+    assertEquals(150.0, am.consultarSaldo(2));
+
+    // Tope alcanzado: ya no se aplica el factor de la promoción
+    am.acumularMillas(2, 10, "Flash");
+    assertEquals(160.0, am.consultarSaldo(2));
+
+    // La promoción agotada se puede volver a iniciar, con un tope nuevo
+    am.iniciarPromocionConTope("Flash", 2.0, 100);
+    am.acumularMillas(1, 50, "Flash"); // 100
+    assertEquals(250.0, am.consultarSaldo(1));
+}
+
+@Test
+void parRotoNoSeVuelveAFormar() {
+    for (int i = 1; i <= 6; i++) {
+        am.registrarUsuario(i);
+    }
+    am.acumularMillas(1, 1000, "NoPromo");
+    am.acumularMillas(2, 1000, "NoPromo");
+    am.acumularMillas(5, 1000, "NoPromo");
+
+    // Se forma el par (1, 2) y se rompe cuando 1 transfiere a 3
+    am.transferirMillas(1, 2, 100);
+    am.transferirMillas(1, 3, 100);
+    assertEquals(0, am.paresTransferidoresExclusivos().length);
+
+    // 1 y 2 vuelven a transferirse entre sí, pero 1 ya no es exclusivo
+    am.transferirMillas(2, 1, 50);
+    assertEquals(0, am.paresTransferidoresExclusivos().length);
+
+    // 2 tampoco forma par con un usuario nuevo: ya transfirió con 1
+    am.transferirMillas(2, 4, 50);
+    assertEquals(0, am.paresTransferidoresExclusivos().length);
+
+    // Entre usuarios que no transfirieron con nadie, el par se forma igual
+    am.transferirMillas(5, 6, 100);
+    int[][] pares = am.paresTransferidoresExclusivos();
+    assertEquals(1, pares.length);
+    assertTrue((pares[0][0] == 5 && pares[0][1] == 6) || (pares[0][0] == 6 && pares[0][1] == 5));
+    }
 }

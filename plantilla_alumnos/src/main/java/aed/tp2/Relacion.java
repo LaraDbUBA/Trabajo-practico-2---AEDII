@@ -10,7 +10,6 @@ public class Relacion implements Comparable<Relacion> {
 Si el handle lo ponemos para usuario no hace falta que relacion
 tenga su propio handle
 */
-    Handle<Relacion> handleExclusivo; // o sea este volaria, el resto queda igual
 
     public Relacion(int id1, int id2) {
         if (id1 < id2) {
@@ -23,7 +22,6 @@ tenga su propio handle
 
         menorAMayor = false;
         mayorAMenor = false;
-        handleExclusivo = null;
     }
 
     public int obtenerIdMenor() {
@@ -33,6 +31,8 @@ tenga su propio handle
     public int obtenerIdMayor() {
         return idMayor;
     }
+// ENTIENDO QUE TODO ESTO VUELA PQ NO LO USAMOS O NO
+/* 
 
     public boolean conecta(int id1, int id2) {
         return idMenor == Math.min(id1, id2) && idMayor == Math.max(id1, id2);
@@ -48,7 +48,7 @@ tenga su propio handle
 
     public boolean huboEnAmbasDirecciones() {
         return menorAMayor && mayorAMenor;
-    }
+    } */ 
     @Override
     public int compareTo(Relacion otra) {
         int comparacion = Integer.compare(idMenor, otra.idMenor);

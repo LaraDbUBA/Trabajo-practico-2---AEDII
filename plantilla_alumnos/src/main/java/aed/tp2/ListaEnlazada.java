@@ -172,7 +172,7 @@ public class ListaEnlazada<T extends Comparable<T>>  {
             actual.sig.prev = actual.prev;
         }
         _longitud--;
-    }{}
+    }
 
     private void eliminarNodo(Nodo nodo) {
         if (nodo == _primero) {

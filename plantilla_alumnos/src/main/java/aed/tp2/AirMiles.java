@@ -17,7 +17,6 @@ public class AirMiles implements SistemaAirMiles {
         double millasTransferidas; 
         int posicionHeap;
 
-
         
         int esExclusivoCon; // tiene que ser el id
 

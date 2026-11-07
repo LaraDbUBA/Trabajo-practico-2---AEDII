@@ -10,7 +10,7 @@ import java.util.ArrayList;
  * Hijo Izquierdo de I es: 2*i + 1
  * Hijo Derecho de I es: 2* i + 2
  * 
- * Desiciones Importantes:
+ * Decisiones Importantes:
  * Se va a implementar o no Handle; Si vale la pena o no por el costo de complejidad
  * <p>
  * Permitiria acceder más rapido ya que podríamos guardar el indice, pero tiene que estar bien implementado tanto cuando sube como cuando baja
