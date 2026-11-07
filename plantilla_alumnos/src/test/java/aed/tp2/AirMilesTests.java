@@ -616,7 +616,7 @@ void transferirTodoElSaldo() {
 }
 
 @Test
-void transferenciaMutua() { //IDENTICO A transferenciasMutuasNoDuplicanPar 
+void transferenciaMutua() { 
     am.registrarUsuario(1);
     am.registrarUsuario(2);
 
@@ -649,30 +649,12 @@ void reiniciarPromocion() {
 
     assertEquals(500.0, am.consultarSaldo(1));
 }
-@Test
-void promocionConTopeExacto() { // PARECIDO A topePromocion
-    am.registrarUsuario(1);
-    am.iniciarPromocionConTope("Flash", 2.0, 200);
-
-    am.acumularMillas(1, 100, "Flash");
-    assertEquals(200.0, am.consultarSaldo(1));
-
-    am.acumularMillas(1, 50, "Flash");
-    assertEquals(250.0, am.consultarSaldo(1));
-}
 
 @Test
 void rankingConCeroUsuarios() {
     assertEquals(0, am.rankingMillas(5).length);
 }
 
-@Test
-void rankingConNMayorALosUsuarios() { //PARECIDO A rankingMillasMenosUsuariosQueN
-    am.registrarUsuario(1);
-    am.registrarUsuario(2);
-
-    assertEquals(2, am.rankingMillas(100).length);
-}
 
 @Test
 void paresExclusivosSinTransferencias() {
@@ -815,7 +797,6 @@ void ningunUsuarioPerteneceADosParesExclusivos() { //PARECIDO A variosParesExclu
     }
 }
 
-// NUEVOS TEST
 @Test
 void elMasCanjeadorEmpateYDesempate() {
     am.registrarUsuario(1);

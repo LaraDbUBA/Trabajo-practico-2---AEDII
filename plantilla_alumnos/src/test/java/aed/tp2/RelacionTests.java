@@ -5,7 +5,6 @@ import org.junit.jupiter.api.BeforeEach;
 import static org.junit.jupiter.api.Assertions.*;
 
 public class RelacionTests {
-    // Así se usa en AirMiles: la lista de pares exclusivos, con un handle por par
     private ListaEnlazada<Relacion> pares;
 
     @BeforeEach
