@@ -1,81 +1,35 @@
 package aed.tp2;
+
 import java.rmi.UnexpectedException;
 import java.util.ArrayList;
+
 public class AirMiles implements SistemaAirMiles {
-    private ABB<Usuario> usuarios;
+    private ABB<Integer, Handle<Usuario>> usuarios;
     private Usuario maxAcumulador;
     private Usuario maxCanjeador;
     private MaxHeap<Usuario> heapMillas;
     private Trie promociones;
-    private ListaEnlazada<Relacion> paresExclusivos; 
-    
-    private class Usuario implements Comparable<Usuario>{
-        int id;
-        double millasDisponibles; 
-        double millasTotales; 
-        double millasCanjeadas; 
-        double millasTransferidas; 
-        int posicionHeap;
-        int esExclusivoCon; // tiene que ser el id
+    private ListaEnlazada<Relacion> paresExclusivos;
 
-        Handle<Relacion> handlePar; 
-
-        Usuario(int id){
-            this.id = id;
-            this.millasDisponibles = 0;
-            this.millasTotales = 0;
-            this.millasCanjeadas = 0;
-            this.millasTransferidas = 0;
-            this.posicionHeap = -1;
-            this.esExclusivoCon = -2;
-            this.handlePar = null;
-            
-
-        }
-        
-        @Override
-        public int compareTo(Usuario otro) {
-        return Integer.compare(this.id, otro.id); //O(1)
-    }
-    }
-
-    
     public AirMiles() {
-        usuarios = new ABB<>(); //O(1)
+        usuarios = new ABB<>(); // O(1)
         promociones = new Trie(); // O(1)
         promociones.insertar("NoPromo", 1.0);
         paresExclusivos = new ListaEnlazada<>();
-        heapMillas = new MaxHeap<Usuario>(new MaxHeap.Operaciones<Usuario>() {
-            @Override
-            public int comparar(Usuario a, Usuario b) {
-                return Double.compare(
-                    a.millasDisponibles,
-                    b.millasDisponibles
-                );
-            }
-
-            @Override
-            public int obtenerPosicion(Usuario u) {
-                return u.posicionHeap;
-            }
-
-            @Override
-            public void actualizarPosicion(Usuario u, int posicion) {
-                u.posicionHeap = posicion;
-            }
-            }
-        );
-
-       
+        heapMillas = new MaxHeap<>();
     }
-    public AirMiles crearSistema(){
-        return new AirMiles(); //O(1)
+
+    public AirMiles crearSistema() {
+        return new AirMiles(); // O(1)
     }
 
     public void registrarUsuario(int id) {
         Usuario u = new Usuario(id); // O(1)
 
-        usuarios.insertar(u); // O(logU)
+        Handle<Usuario> handle = heapMillas.insertar(u); // O(logU)
+
+        usuarios.definir(id, handle); // O(logU) promedio y O(U) en peor caso
+
         if (maxAcumulador == null) {
             maxAcumulador = u;
         }
@@ -83,250 +37,184 @@ public class AirMiles implements SistemaAirMiles {
         if (maxCanjeador == null) {
             maxCanjeador = u;
         }
-        heapMillas.insertar(u); // O(logU)
         // Complejidad final: O(logU)
     }
-
 
     public void registrarUsuarioConReferidor(int id, int ref) {
         Usuario u = new Usuario(id); // O(1)
 
         // Antes de agregar aumentamos la cantidad de millas
-        u.millasDisponibles +=500;
-        u.millasTotales += 500;
+        u.acumular(500.0);
 
-        usuarios.insertar(u); // O(logU)
-        heapMillas.insertar(u); // O(logU)
+        Handle<Usuario> handle = heapMillas.insertar(u); // O(logU)
 
-        /**
-         * Tenemos que sumarle 500 millas al referidor
-         * Despues en base a la modificacion volvemos a verificar si es necesario cambiar las cosas
-         */
+        usuarios.definir(id, handle); // O(logU) promedio y O(U) en peor caso
 
-        Usuario referidor = buscarUsuario(ref); // O(logU)
+        Handle<Usuario> h_referidor = buscarHandleUsuario(ref); // O(logU) promedio y O(U) en peor caso
+        Usuario referidor = h_referidor.valor();
+        referidor.acumular(500.0);
+        h_referidor.modificar(referidor); // O(logU)
 
-        referidor.millasDisponibles +=500;
-        referidor.millasTotales += 500; // se le agregan las totales tambien?
-
-        // si de verdad hay que sumar las millas Totales hay que chequear el maximo acumulador
-        heapMillas.actualizar(referidor); // O(logU)
-        
-
-        if (u.millasTotales > maxAcumulador.millasTotales){maxAcumulador = u;}
-        if (referidor.millasTotales > maxAcumulador.millasTotales){maxAcumulador = referidor;}
-        
-    }
-
-
-    private double consultarFactorCategoria(String categoria) {
-        double res = 0.0; //O(1)
-
-        if (categoria.equals("Bronce")) {
-            res = 1.0;
-        } else if (categoria.equals("Plata")) {
-            res = 1.5;
-        } else if (categoria.equals("Oro")) {
-            res = 2.0;
+        if (u.totales() > maxAcumulador.totales()) {
+            maxAcumulador = u;
         }
-
-        return res; // O(1)
-    }
-    private String categoriaPorMillas(double millas) {
-        String res;
-
-        if (millas < 10000) {
-            res = "Bronce";
-        } else if (millas < 50000) {
-            res = "Plata";
-        } else if (millas < 1000000) {
-            res = "Oro";
-        } else {
-            res = "Platino";
+        if (referidor.totales() > maxAcumulador.totales()) {
+            maxAcumulador = referidor;
         }
-
-        return res; // O(1)
     }
 
-    
     public void acumularMillas(int id, double distancia, String nombrePromo) {
-        Usuario u = buscarUsuario(id); // O(log U)
+        // requiere: el usuario existe en el sistema, distancia > 0,
+        Handle<Usuario> h_usuario = buscarHandleUsuario(id); // O(logU) promedio y O(U) en peor caso
+        Usuario u = h_usuario.valor(); // O(1)
 
-        String categoria = categoriaPorMillas(u.millasTotales); // O(1)
-        double factorCategoria = consultarFactorCategoria(categoria); // O(1)
+        double factorCategoria = u.factorCategoria(); // O(1)
 
         double millasBase = distancia * factorCategoria; // O(1)
 
         // Busca la promoción una sola vez y controla su tope.
         double millas = promociones.calcularMillas(nombrePromo, millasBase); // O(|L|)
 
-        u.millasTotales += millas; // O(1)
-        u.millasDisponibles += millas; // O(1)
+        u.acumular(millas); // O(1)
 
-        heapMillas.actualizar(u); // O(log U)
+        h_usuario.modificar(u); // O(log U)
 
-        if (maxAcumulador == null || u.millasTotales > maxAcumulador.millasTotales) {
+        if (u.totales() > maxAcumulador.totales()) {
             maxAcumulador = u; // O(1)
         }
 
         // Complejidad: O(log U + |L|)
     }
 
-
     public void canjearMillas(int id, double cantidad) {
-        
-        Usuario u = buscarUsuario(id); // O(logU)
-        u.millasDisponibles -= cantidad;
-        u.millasCanjeadas += cantidad;
-        if (maxCanjeador == null || (u.millasCanjeadas + u.millasTransferidas) > (maxCanjeador.millasCanjeadas + maxCanjeador.millasTransferidas)){
+        // requiere: el usuario existe en el sistema y 0 < cantidad <= disponibles
+        Handle<Usuario> h_usuario = buscarHandleUsuario(id); // O(logU) promedio y O(U) en peor caso
+        Usuario u = h_usuario.valor(); // O(1)
+
+        u.canjear(cantidad); // O(1)
+
+        if (u.perdidas() > maxCanjeador.perdidas()) {
             maxCanjeador = u;
         }
-        heapMillas.actualizar(u); // O(logU)
-        //O(logU)
-    }
-    private void eliminarPareja(Usuario usuario){
-        if (usuario.handlePar != null){
-            int id_otro = usuario.esExclusivoCon;
-            Usuario otro = buscarUsuario(id_otro); //O(logU), no me cambia nada en mi implemetacion de transferirMillas
-            usuario.handlePar.eliminar();
-            usuario.handlePar = null;
-            otro.handlePar = null;
-            otro.esExclusivoCon = -1;
-            
 
-        }
+        h_usuario.modificar(u); // O(logU)
+        // O(logU)
     }
 
-    private void actualizarExclusividad(Usuario usuario1, Usuario usuario2){
-        if (usuario1.esExclusivoCon == -1){
-            return;
-        }
-        
-        // un entero no puede ser null, asignamos un valor que indique que nunca se paso con nadie
-        // por ejemplo -2
-        if (usuario1.esExclusivoCon == -2){
-            usuario1.esExclusivoCon = usuario2.id;
-        }
+    private void eliminarPareja(Usuario usuario) {
+        if (usuario.tieneHandlePar()) {
+            int id = usuario.id();
+            Handle<Relacion> handle = usuario.obtenerHandlePar();
+            int id_otro = handle.valor().otro(id);
+            Usuario otro = buscarHandleUsuario(id_otro).valor(); // O(logU) promedio y O(U) en peor caso
+            handle.eliminar();
+            usuario.tiraHandlePar();
+            otro.tiraHandlePar();
 
-        if (usuario1.esExclusivoCon != usuario2.id){
-            eliminarPareja(usuario1);
-            eliminarPareja(usuario2);
-            usuario1.esExclusivoCon = -1;
-            usuario2.esExclusivoCon = -1;
         }
     }
-    
-    private void actualizarRelacion(Usuario origen, Usuario destino){
-        actualizarExclusividad(origen, destino);
-        actualizarExclusividad(destino, origen);
 
-        if (origen.esExclusivoCon == destino.id && 
-            destino.esExclusivoCon == origen.id &&
-            origen.handlePar == null &&
-            destino.handlePar == null){
-            Relacion relacion = new Relacion(origen.id, destino.id);
-            Handle<Relacion> handle =  paresExclusivos.agregarAtras(relacion);
-            origen.handlePar = handle;
-            destino.handlePar = handle;  
+    private void actualizarRelacion(Usuario origen, Usuario destino) {
+        int id_origen = origen.id();
+        int id_destino = destino.id();
+
+        if (origen.rompeExclusividad(id_destino)) {
+            eliminarPareja(origen);
+        }
+        if (destino.rompeExclusividad(id_origen)) {
+            eliminarPareja(destino);
+        }
+
+        if (origen.esExclusivoCon(id_destino) && destino.esExclusivoCon(id_origen) && !origen.tieneHandlePar()
+                && !destino.tieneHandlePar()) {
+            Relacion relacion = new Relacion(id_origen, id_destino);
+            Handle<Relacion> handle = paresExclusivos.agregarAtras(relacion);
+            origen.guardarHandlePar(handle);
+            destino.guardarHandlePar(handle);
         }
     }
 
     public void transferirMillas(int origen, int destino, double cantidad) {
-        Usuario u_origen = buscarUsuario(origen);   // O(LogU)
-        Usuario u_destino = buscarUsuario(destino);// O(logU)
-        
-        // hay que chequear que pasa si se pasa del monton del total
-        u_origen.millasDisponibles -= cantidad;
-        u_destino.millasDisponibles += cantidad;
-        u_origen.millasTransferidas += cantidad;
+        // requiere: origen y destino existen, origen ≠ destino,
+        // cantidad > 0 y disponibles(origen) ≥ cantidad
+        Handle<Usuario> h_origen = buscarHandleUsuario(origen); // O(logU) promedio y O(U) en peor caso
+        Usuario u_origen = h_origen.valor();
+        Handle<Usuario> h_destino = buscarHandleUsuario(destino); // O(logU) promedio y O(U) en peor caso
+        Usuario u_destino = h_destino.valor();
 
-        if (maxCanjeador == null || (u_origen.millasCanjeadas + u_origen.millasTransferidas) > (maxCanjeador.millasCanjeadas + maxCanjeador.millasTransferidas)){
+        u_origen.transferir(cantidad);
+        u_destino.recibir(cantidad); // solo suma disponibles y no cumple disponibles <= totales siempre, pero pasa
+                                     // test transferenciaRecibidaNoSumaTotales
+
+        if (u_origen.perdidas() > maxCanjeador.perdidas()) {
             maxCanjeador = u_origen;
         }
-        heapMillas.actualizar(u_origen); //O(logU)
-        heapMillas.actualizar(u_destino); //O(logU)
+
+        h_origen.modificar(u_origen); // O(logU)
+        h_destino.modificar(u_destino); // O(logU)
         // O(logU)
-        actualizarRelacion(u_origen, u_destino); //O(logU)
+        actualizarRelacion(u_origen, u_destino); // O(logU)
 
     }
 
-    private Usuario buscarUsuario(int id) { 
-        return usuarios.obtener(new Usuario(id)); // O(logU)
+    private Handle<Usuario> buscarHandleUsuario(int id) {
+        return usuarios.obtener(id);
     }
 
     public double consultarSaldo(int id) {
-        Usuario u = buscarUsuario(id); //O(logU)
-
-        if (u == null) {
-            throw new RuntimeException("Usuario inexistente");
-        }
-
-        return u.millasDisponibles;
-        }
+        // requiere: id asociado a un usuario perteneciente al sistema
+        Usuario u = buscarHandleUsuario(id).valor(); // O(logU) promedio y O(U) en peor caso
+        return u.disponibles();
+    }
 
     public String consultarCategoria(int id) {
-        Usuario u = buscarUsuario(id); //O(logU)
-
-        if (u == null) {
-            throw new RuntimeException("Usuario inexistente");
-        }
-
-        return categoriaPorMillas(u.millasTotales);
-
-       
+        // requiere: id asociado a un usuario perteneciente al sistema
+        Usuario u = buscarHandleUsuario(id).valor(); // O(logU) promedio y O(U) en peor caso
+        return u.categoria();
     }
 
     public int[] rankingMillas(int n) {
-        
+        // requiere: n>=1
         int cantidad = Math.min(n, heapMillas.tamanio());
-
-        if (cantidad <= 0) {
-            return new int[0];
-        }
-
+        ArrayList<Usuario> aux = heapMillas.primeros(cantidad);
         int[] ranking = new int[cantidad];
-        ArrayList<Usuario> auxiliares = new ArrayList<>();
-        //se repite N veces
-        for (int i = 0; i < cantidad; i++) {
-            Usuario u = heapMillas.extraerMaximo(); //O(logU)
-
-            ranking[i] = u.id;
-            auxiliares.add(u);
+        for(int i = 0;i < cantidad;i++) {
+            int id = aux.get(i).id();
+            ranking[i] = id;
         }
-
-        for (Usuario u : auxiliares) {
-            heapMillas.insertar(u); // O(logU)
-        }
-
         return ranking;
-        
-       //O(NlogU)
+
+        // O(NlogU)
     }
 
     public void iniciarPromocion(String nombre, double factor) {
-        promociones.insertar(nombre, factor);  // O(|L|)  
+        promociones.insertar(nombre, factor); // O(|L|)
     }
 
     public void iniciarPromocionConTope(String nombre, double factor, double tope) {
-        promociones.insertarConTope(nombre, factor, tope);   //O(|L|)  
+        promociones.insertarConTope(nombre, factor, tope); // O(|L|)
     }
 
     public void finalizarPromocion(String nombre) {
-        promociones.eliminar(nombre);   // O(|L|) 
+        promociones.eliminar(nombre); // O(|L|)
     }
 
     public int elMasAcumulador() {
-        if (maxAcumulador == null) {return -1;} // O(1)
-        return maxAcumulador.id; // O(1)
+        if (maxAcumulador == null) {
+            return -1;
+        } // O(1)
+        return maxAcumulador.id(); // O(1)
     }
 
     public int elMasCanjeador() {
-        if(maxCanjeador == null) {return -1;} // O(1)
-        return maxCanjeador.id; // O(1)
+        if (maxCanjeador == null) {
+            return -1;
+        } // O(1)
+        return maxCanjeador.id(); // O(1)
     }
 
-    
     public int[][] paresTransferidoresExclusivos() {
-        
+
         int cantidad = paresExclusivos.longitud();
         int[][] resultado = new int[cantidad][2];
 
@@ -344,13 +232,10 @@ public class AirMiles implements SistemaAirMiles {
 
         return resultado;
     }
-} 
-            /*Sea P la longitud de pares exclusivos
-    El recorrido es O(P), y como cada pareja involucra dos 
-    usuarios distintos, P < U/2. Por eso, la complejidad 
-    final es O(U). */
-    
-
-
-
-
+}
+/*
+ * Sea P la longitud de pares exclusivos
+ * El recorrido es O(P), y como cada pareja involucra dos
+ * usuarios distintos, P < U/2. Por eso, la complejidad
+ * final es O(U).
+ */

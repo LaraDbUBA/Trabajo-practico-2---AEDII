@@ -1,24 +1,22 @@
 package aed.tp2;
 
-import java.util.*;
+//Diccionario sobre ABB asocia claves a valores, ordenado por clave. 
 
-// Todos los tipos de datos "Comparables" tienen el método compareTo()
-// elem1.compareTo(elem2) devuelve un entero. Si es mayor a 0, entonces elem1 > elem2
-public class ABB<T extends Comparable<T>> {
+public class ABB<K extends Comparable<K>,V> {
     private Nodo raiz;
     private int cantidad;
 
     private class Nodo {
-        T elem;
         Nodo izq;
         Nodo der;
-        Nodo padre;
+        K clave;
+        V valor;
 
-        Nodo(T elem){
-            this.elem = elem;
+        Nodo(K k, V v){
+            this.clave = k;
+            this.valor = v;
             this.izq = null;
             this.der = null;
-            this.padre = null;
         }
     }
 
@@ -27,42 +25,9 @@ public class ABB<T extends Comparable<T>> {
         this.cantidad = 0;
     }
 
-    public int cardinal() {
-        return this.cantidad;
-    }
-
-    public T minimo(){
-        if (raiz == null){
-            throw new RuntimeException();
-        }
-
-        Nodo actual = raiz;
-
-        while(actual.izq != null){
-            actual = actual.izq ;
-        }
-
-        return actual.elem;
-    }
-
-    public T maximo(){
-        if (raiz == null){
-            throw new RuntimeException();
-        }
-
-        Nodo actual = raiz;
-
-        while(actual.der != null){
-            actual = actual.der;
-        }
-
-        return actual.elem;
-    }
-
-    
-    public void insertar(T elem) {
+    public void definir(K k, V v) {
         if (raiz == null) {
-            raiz = new Nodo(elem);
+            raiz = new Nodo(k,v);
             cantidad++;
             return;
         }
@@ -72,10 +37,11 @@ public class ABB<T extends Comparable<T>> {
 
         while (actual != null) {
             padre = actual;
-            int comp = elem.compareTo(actual.elem);
+            int comp = k.compareTo(actual.clave);
 
             if (comp == 0) {
-                return; // El elemento ya existe
+                actual.valor = v; // La clave ya existe, lo pisa el nuevo valor. 
+                return;
             } else if (comp < 0) {
                 actual = actual.izq;
             } else {
@@ -83,177 +49,33 @@ public class ABB<T extends Comparable<T>> {
             }
         }
 
-        Nodo nuevo = new Nodo(elem);
-        nuevo.padre = padre;
+        Nodo nuevo = new Nodo(k,v);
 
-        if (elem.compareTo(padre.elem) < 0) {
+        if (k.compareTo(padre.clave) < 0) {
             padre.izq = nuevo;
         } else {
             padre.der = nuevo;
         }
 
         cantidad++;
+    // Complejidad: // O(logU) promedio y O(U) en peor caso (usuarios insertados en orden) 
     }
 
-
-    public boolean pertenece(T elem){
-        Nodo actual = raiz;
-        
-        while (actual != null){
-            int comp = elem.compareTo(actual.elem);
-
-            if (comp == 0){
-                return true;
-            } else if (comp <0){
-                actual = actual.izq;
-            } else {
-                actual = actual.der;
-            }
-        }
-        return false;
-    }
-
-        public void eliminar(T elem) {
-            Nodo actual = raiz;
-
-            while (actual != null && !actual.elem.equals(elem)) {
-                int comp = elem.compareTo(actual.elem);
-
-                if (comp < 0) {
-                    actual = actual.izq;
-                } else {
-                    actual = actual.der;
-                }
-            }
-
-            if (actual == null) {
-                return;
-            }
-
-            if (actual.izq == null) {
-                reemplazar(actual, actual.der);
-            }
-          
-            else if (actual.der == null) {
-                reemplazar(actual, actual.izq);
-            }
-            
-            else {
-                Nodo sucesor = actual.der;
-
-                while (sucesor.izq != null) {
-                    sucesor = sucesor.izq;
-                }
-
-                actual.elem = sucesor.elem;
-                reemplazar(sucesor, sucesor.der);
-            }
-
-            cantidad--;
-        }
-        // este es el nuevo
-    public T obtener(T elem) {
+    public V obtener(K k) {
         Nodo actual = raiz;
 
         while (actual != null) {
-            int comp = elem.compareTo(actual.elem);
+            int comp = k.compareTo(actual.clave);
 
             if (comp == 0) {
-                return actual.elem;
+                return actual.valor;
             } else if (comp < 0) {
                 actual = actual.izq;
             } else {
                 actual = actual.der;
             }
         }
-
         return null;
+    // Complejidad: // O(logU) promedio y O(U) en peor caso (usuarios insertados en orden) 
     }
-
-    private void reemplazar(Nodo viejo, Nodo nuevo){
-        if (viejo.padre == null){
-            raiz = nuevo;
-        } else if(viejo == viejo.padre.izq){
-            viejo.padre.izq = nuevo;
-        } else{
-            viejo.padre.der = nuevo;
-        }
-
-        if (nuevo!= null){
-            nuevo.padre = viejo.padre;
-        }
-    }
-
-    @Override
-    public String toString(){
-        String resultado = "{";
-        ABB_Iterador it = iterador();
-        
-        while(it.haySiguiente()){
-            resultado += it.siguiente();
-
-            if (it.haySiguiente()){
-                resultado += ",";
-            }
-        }
-
-        resultado += "}";
-
-        return resultado;
-    }
-
-    public class ABB_Iterador {
-        private Nodo _actual;
-
-        public boolean haySiguiente() {            
-            return _actual != null;    
-        }
-
-        private Nodo sucesor(Nodo nodo) {
-            if (nodo.der != null) {
-                Nodo actual = nodo.der;
-
-                while (actual.izq != null) {
-                    actual = actual.izq;
-                }
-
-                return actual;
-            }
-
-            Nodo actual = nodo;
-            Nodo padre = actual.padre;
-
-            while (padre != null && actual == padre.der) {
-                actual = padre;
-                padre = padre.padre;
-            }
-
-            return padre;
-        }
-    
-        public T siguiente() {
-            if (_actual == null){
-                throw new RuntimeException();
-            }   
-
-            T resultado = _actual.elem;
-            _actual = sucesor(_actual);
-
-            return resultado;
-        }
-    }
-
-    public ABB_Iterador iterador() {
-        ABB_Iterador it = new ABB_Iterador();
-        it._actual = raiz;
-
-        if (it._actual != null) {
-            while (it._actual.izq != null) {
-                it._actual = it._actual.izq;
-            }
-        }
-
-        return it;
-    }
-
 }

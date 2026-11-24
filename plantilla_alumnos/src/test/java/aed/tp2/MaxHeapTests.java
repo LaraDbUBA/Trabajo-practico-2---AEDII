@@ -1,113 +1,121 @@
 package aed.tp2;
 
-import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
+import java.util.ArrayList;
+
 import org.junit.jupiter.api.BeforeEach;
-import static org.junit.jupiter.api.Assertions.*;
+import org.junit.jupiter.api.Test;
 
 public class MaxHeapTests {
 
-    // Elemento de prueba: una prioridad y su handle (posición en el heap)
-    private static class Elem {
-        int valor;
-        int pos = -1;
-        Elem(int valor) { this.valor = valor; }
-    }
-
-    private MaxHeap<Elem> heap;
+    // Probamos el heap con usuarios, como en AirMiles (Usuario es Comparable por
+    // millas disponibles)
+    private MaxHeap<Usuario> heap;
 
     @BeforeEach
     void setUp() {
-        heap = new MaxHeap<>(new MaxHeap.Operaciones<Elem>() {
-            public int comparar(Elem a, Elem b) { return Integer.compare(a.valor, b.valor); }
-            public int obtenerPosicion(Elem e) { return e.pos; }
-            public void actualizarPosicion(Elem e, int posicion) { e.pos = posicion; }
-        });
+        heap = new MaxHeap<>();
     }
 
-        @Test
-    void extraerMaximoDevuelveEnOrdenDecreciente() {
-        // Prioridades desordenadas y con un repetido
-        heap.insertar(new Elem(5));
-        heap.insertar(new Elem(7));
-        heap.insertar(new Elem(9));
-        heap.insertar(new Elem(3));
-        heap.insertar(new Elem(7));
+    // Crea un usuario con cierta cantidad de millas disponibles
+    private Usuario usuario(int id, double millas) {
+        Usuario u = new Usuario(id);
+        u.acumular(millas);
+        return u;
+    }
+
+    // Devuelve las millas disponibles de cada usuario de la lista, en orden
+    private double[] millas(ArrayList<Usuario> usuarios) {
+        double[] res = new double[usuarios.size()];
+        for (int i = 0; i < usuarios.size(); i++) {
+            res[i] = usuarios.get(i).disponibles();
+        }
+        return res;
+    }
+
+    @Test
+    void primerosDevuelveEnOrdenDecreciente() {
+        // Millas desordenadas y con un repetido
+        heap.insertar(usuario(1, 5));
+        heap.insertar(usuario(2, 7));
+        heap.insertar(usuario(3, 9));
+        heap.insertar(usuario(4, 3));
+        heap.insertar(usuario(5, 7));
         assertEquals(5, heap.tamanio());
 
-        // Extraer el máximo repetidamente devuelve las prioridades de mayor a menor
-        assertEquals(9, heap.extraerMaximo().valor);
-        assertEquals(7, heap.extraerMaximo().valor);
-        assertEquals(7, heap.extraerMaximo().valor);
-        assertEquals(5, heap.extraerMaximo().valor);
-        assertEquals(3, heap.extraerMaximo().valor);
-        assertTrue(heap.estaVacio());
+        // primeros devuelve de mayor a menor
+        assertArrayEquals(new double[] { 9, 7, 7, 5, 3 }, millas(heap.primeros(5)));
+
+        // y no saca a nadie: el heap sigue con los 5 y da lo mismo si se vuelve a
+        // consultar
+        assertEquals(5, heap.tamanio());
+        assertArrayEquals(new double[] { 9, 7, 7, 5, 3 }, millas(heap.primeros(5)));
+        assertArrayEquals(new double[] { 9, 7 }, millas(heap.primeros(2)));
     }
 
     @Test
-    void handlesSeActualizanAlInsertarYExtraer() {
-        Elem a = new Elem(5);
-        Elem b = new Elem(9);
-        Elem c = new Elem(3);
-        Elem d = new Elem(7);
-        heap.insertar(a);
+    void handlesSiguenValidosDespuesDePrimeros() {
+        Usuario a = usuario(1, 5);
+        Usuario b = usuario(2, 9);
+        Usuario c = usuario(3, 3);
+        Usuario d = usuario(4, 7);
+        Handle<Usuario> ha = heap.insertar(a);
+        Handle<Usuario> hb = heap.insertar(b);
+        heap.insertar(c);
+        heap.insertar(d);
+
+        // primeros saca y vuelve a meter a b (id 2) y d (id 4)
+        ArrayList<Usuario> top = heap.primeros(2);
+        assertEquals(2, top.get(0).id());
+        assertEquals(4, top.get(1).id());
+
+        // los handles viejos siguen sirviendo (si primeros creara nodos nuevos, esto se
+        // rompería)
+        assertEquals(2, hb.valor().id());
+        a.acumular(10); // a pasa a tener 15
+        ha.modificar(a);
+        assertEquals(1, heap.primeros(1).get(0).id());
+        assertArrayEquals(new double[] { 15, 9, 7, 3 }, millas(heap.primeros(4)));
+    }
+
+    @Test
+    void modificarReubicaAlCambiarLasMillas() {
+        Usuario a = usuario(1, 10);
+        Usuario b = usuario(2, 20);
+        Usuario c = usuario(3, 30);
+        Usuario d = usuario(4, 40);
+        Handle<Usuario> ha = heap.insertar(a);
         heap.insertar(b);
         heap.insertar(c);
         heap.insertar(d);
 
-        // El máximo está en la raíz (posición 0)
-        assertEquals(0, b.pos);
+        // a gana millas: sube hasta ser el máximo
+        a.acumular(40); // 50
+        ha.modificar(a);
+        assertEquals(1, heap.primeros(1).get(0).id());
 
-        // Al extraerlo, su handle queda invalidado y el nuevo máximo pasa a la raíz
-        heap.extraerMaximo();
-        assertEquals(-1, b.pos);
-        assertEquals(0, d.pos);
+        // a canjea todo: baja y d vuelve a ser el máximo
+        a.canjear(50); // 0
+        ha.modificar(a);
+        assertEquals(4, heap.primeros(1).get(0).id());
 
-        // Un elemento extraído se puede volver a insertar
-        heap.insertar(b);
-        assertEquals(0, b.pos);
-        assertEquals(b, heap.verMaximo());
-    }
-
-    @Test
-    void actualizarReubicaAlCambiarLaPrioridad() {
-        Elem a = new Elem(10);
-        Elem b = new Elem(20);
-        Elem c = new Elem(30);
-        Elem d = new Elem(40);
-        heap.insertar(a);
-        heap.insertar(b);
-        heap.insertar(c);
-        heap.insertar(d);
-
-        // Aumenta la prioridad de a: sube hasta la raíz
-        a.valor = 50;
-        heap.actualizar(a);
-        assertEquals(a, heap.verMaximo());
-        assertEquals(0, a.pos);
-
-        // Disminuye la prioridad de a: baja y d vuelve a ser el máximo
-        a.valor = 0;
-        heap.actualizar(a);
-        assertEquals(d, heap.verMaximo());
-
-        // Se mantiene el invariante de orden
-        assertEquals(40, heap.extraerMaximo().valor);
-        assertEquals(30, heap.extraerMaximo().valor);
-        assertEquals(20, heap.extraerMaximo().valor);
-        assertEquals(0, heap.extraerMaximo().valor);
+        // se mantiene el orden
+        assertArrayEquals(new double[] { 40, 30, 20, 0 }, millas(heap.primeros(4)));
     }
 
     @Test
     void heapConUnSoloElemento() {
-        Elem a = new Elem(1);
-        heap.insertar(a);
-        assertEquals(a, heap.verMaximo());
-        assertEquals(0, a.pos);
+        Usuario a = usuario(1, 1);
+        Handle<Usuario> ha = heap.insertar(a);
+        assertEquals(1, heap.tamanio());
+        assertEquals(1, heap.primeros(1).get(0).id());
+        assertEquals(1, heap.tamanio());
 
-        // Extraer el único elemento deja el heap vacío
-        assertEquals(a, heap.extraerMaximo());
-        assertEquals(-1, a.pos);
-        assertTrue(heap.estaVacio());
-
+        // eliminar el único elemento deja el heap vacío
+        ha.eliminar();
+        assertEquals(0, heap.tamanio());
+        assertEquals(0, heap.primeros(0).size());
     }
 }

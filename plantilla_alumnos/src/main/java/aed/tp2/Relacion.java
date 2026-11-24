@@ -4,11 +4,6 @@ public class Relacion implements Comparable<Relacion> {
     private final int idMenor;
     private final int idMayor;
 
-/*
-Si el handle lo ponemos para usuario no hace falta que relacion
-tenga su propio handle
-*/
-
     public Relacion(int id1, int id2) {
         if (id1 < id2) {
             idMenor = id1;
@@ -27,6 +22,18 @@ tenga su propio handle
     public int obtenerIdMayor() {
         return idMayor;
     }
+
+    public int otro(int id) {
+        //requiere: id == idMayor || id == idMenor
+        int id_otro;
+        if(idMayor == id) {
+            id_otro = idMenor;
+        } else {
+            id_otro = idMayor;
+        }
+        return id_otro;
+    }
+
     @Override
     public int compareTo(Relacion otra) {
         int comparacion = Integer.compare(idMenor, otra.idMenor);

@@ -1,6 +1,6 @@
 /*
  * Cuentas Importantes:
- * Buscar el indice Padre es: n -1 / 2
+ * Buscar el indice Padre es: (i - 1)/ 2
  * Hijo Izquierdo de I es: 2*i + 1
  * Hijo Derecho de I es: 2* i + 2
  * 
@@ -10,89 +10,124 @@ package aed.tp2;
 
 import java.util.ArrayList;
 
-public class MaxHeap<T> {
+public class MaxHeap<T extends Comparable<T>> {
+    private ArrayList<Nodo> datos;
 
-    public interface Operaciones<T> {
-        int comparar(T a, T b);
-        int obtenerPosicion(T elem);
-        void actualizarPosicion(T elem, int posicion);
+    private class Nodo {
+        T dato;
+        int posicion;
+
+        Nodo(T v, int i) {
+            dato = v;
+            posicion = i;
+        }
     }
 
-    private ArrayList<T> datos;
-    private Operaciones<T> operaciones;
+    private class HandleHeap implements Handle<T> {
+        private Nodo nodo;
 
-    public MaxHeap(Operaciones<T> operaciones) {
+        private HandleHeap(Nodo n) {
+            this.nodo = n;
+        }
+
+        public T valor() {
+            // requiere que el handle tenga un nodo que pertenezca al Heap
+
+            return nodo.dato;
+        }
+
+        public void eliminar() {
+            // requiere que el handle tenga un nodo que pertenezca al Heap
+            int pos = this.nodo.posicion;
+            Nodo ultimo = datos.remove(datos.size() - 1);
+            if (pos != datos.size()) {
+                datos.set(pos, ultimo);
+                ultimo.posicion = pos;
+                subir(pos);
+                bajar(ultimo.posicion);
+            }
+            this.nodo = null;
+        }
+
+        public void modificar(T v) {
+            // requiere que el handle tenga un nodo que pertenezca al Heap
+            nodo.dato = v;
+            subir(this.nodo.posicion);
+            bajar(this.nodo.posicion);
+        }
+
+        public boolean equals(Handle<T> otroHandle) {
+            if (otroHandle == null || nodo == null) {
+                return false;
+            }
+            return nodo.dato.equals(otroHandle.valor());
+        }
+
+        public String toString() {
+            return valor().toString();
+        }
+    }
+
+    public MaxHeap() {
         this.datos = new ArrayList<>();
-        this.operaciones = operaciones;
-    }
-
-    public boolean estaVacio() {
-        return datos.isEmpty();
     }
 
     public int tamanio() {
         return datos.size();
     }
 
-    public T verMaximo() {
-        if (estaVacio()) {
-            throw new IllegalStateException("El heap esta vacio");
-        }
-
-        return datos.get(0);
-    }
-
-    public void insertar(T elem) {
-        if (operaciones.obtenerPosicion(elem) != -1) {
-            throw new IllegalArgumentException("El elemento ya pertenece al heap");
-        }
-
-        datos.add(elem);
-
+    public Handle<T> insertar(T elem) {
+        Nodo n = new Nodo(elem, datos.size());
+        datos.add(n);
         int pos = datos.size() - 1;
-        operaciones.actualizarPosicion(elem, pos);
-
         subir(pos);
+        return new HandleHeap(n);
     }
 
-    public T extraerMaximo() {
-        if (estaVacio()) {
-            throw new IllegalStateException("El heap esta vacio");
+    public ArrayList<T> primeros(int n) {
+        // requiere: 0 ≤ n ≤ tamanio()
+
+        ArrayList<Nodo> nodos = new ArrayList<>();
+        ArrayList<T> res = new ArrayList<>();
+
+        while (n != 0) { // N veces
+            Nodo nodo = this.sacarNodoMaximo(); // O(log U)
+            nodos.add(nodo);
+            res.add(nodo.dato);
+            n--;
         }
 
-        T maximo = datos.get(0);
-        T ultimo = datos.remove(datos.size() - 1);
+        for (Nodo nodo : nodos) { // N veces
+            nodo.posicion = datos.size();
+            datos.add(nodo);
+            subir(datos.size() - 1); // O(log U)
+        }
+        return res;
+        // Complejidad: O(Nlog U) + O(Nlog U) = O(Nlog U)
+    }
+
+    private Nodo sacarNodoMaximo() {
+        // requiere: datos.size() > 0
+
+        Nodo maximo = datos.get(0);
+        Nodo ultimo = datos.remove(datos.size() - 1);
 
         if (!datos.isEmpty()) {
             datos.set(0, ultimo);
-            operaciones.actualizarPosicion(ultimo, 0);
+            ultimo.posicion = 0;
             bajar(0);
         }
-
-        operaciones.actualizarPosicion(maximo, -1);
-
+        maximo.posicion = -1;
         return maximo;
-    }
-
-    public void actualizar(T elem) {
-        int pos = operaciones.obtenerPosicion(elem);
-
-        if (pos < 0 || pos >= datos.size() || datos.get(pos) != elem) {
-            throw new IllegalArgumentException("El elemento no pertenece al heap");
-        }
-
-        subir(pos);
-        bajar(operaciones.obtenerPosicion(elem));
     }
 
     private void subir(int pos) {
         while (pos > 0) {
             int padre = (pos - 1) / 2;
 
-            if (operaciones.comparar(datos.get(pos), datos.get(padre)) <= 0) {
+            if (datos.get(pos).dato.compareTo(datos.get(padre).dato) <= 0) {
                 break;
             }
-
             intercambiar(pos, padre);
             pos = padre;
         }
@@ -106,33 +141,28 @@ public class MaxHeap<T> {
             int der = 2 * pos + 2;
             int mayor = pos;
 
-            if (izq < tamanio && operaciones.comparar(
-                    datos.get(izq), datos.get(mayor)) > 0) {
+            if (izq < tamanio && datos.get(izq).dato.compareTo(datos.get(mayor).dato) > 0) {
                 mayor = izq;
             }
 
-            if (der < tamanio && operaciones.comparar(
-                    datos.get(der), datos.get(mayor)) > 0) {
+            if (der < tamanio && datos.get(der).dato.compareTo(datos.get(mayor).dato) > 0) {
                 mayor = der;
             }
 
             if (mayor == pos) {
                 break;
             }
-
             intercambiar(pos, mayor);
             pos = mayor;
         }
     }
 
     private void intercambiar(int i, int j) {
-        T aux = datos.get(i);
+        Nodo aux = datos.get(i);
         datos.set(i, datos.get(j));
         datos.set(j, aux);
 
-        operaciones.actualizarPosicion(datos.get(i), i);
-        operaciones.actualizarPosicion(datos.get(j), j);
+        datos.get(i).posicion = i;
+        datos.get(j).posicion = j;
     }
 }
-
-
