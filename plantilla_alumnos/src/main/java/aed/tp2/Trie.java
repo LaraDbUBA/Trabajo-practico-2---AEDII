@@ -1,150 +1,95 @@
 package aed.tp2;
 
-public class Trie {
-    private class Promocion {
-        double factor;
-        double tope;
-        double millasOtorgadas;
-        boolean tieneTope;
+import java.util.ArrayList;
 
-        Promocion(double factor) {
-            this.factor = factor;
-            this.tieneTope = false;
-        }
-
-        Promocion(double factor, double tope) {
-            this.factor = factor;
-            this.tope = tope;
-            this.millasOtorgadas = 0;
-            this.tieneTope = true;
-        }
-    }
-
-    private class NodoTrie {
-        NodoTrie[] hijos;
-        Promocion promocion;
-
-        NodoTrie() {
-            hijos = new NodoTrie[26];
-            promocion = null;
-        }
-    }
+public class Trie<T> implements Diccionario<String, T> {
+    private static final int ALFABETO = 256;
 
     private NodoTrie raiz;
+
+    private class NodoTrie {
+        ArrayList<NodoTrie> hijos;
+        T valor;
+
+        NodoTrie() {
+            hijos = new ArrayList<>();
+            for (int i = 0; i < ALFABETO; i++) {
+                hijos.add(null);
+            }
+        }
+    }
 
     public Trie() {
         raiz = new NodoTrie();
     }
 
-    private int indice(char c) {
-        return Character.toUpperCase(c) - 'A';
+    private NodoTrie buscarNodo(String clave) {
+        NodoTrie res = this.raiz;
+        for (int i = 0; i < clave.length() && res != null; i++) {
+            char c = clave.charAt(i);
+            res = res.hijos.get(c);
+        }
+        return res;
     }
 
-    public void insertar(String nombre, double factor) {
-        insertarPromocion(nombre, new Promocion(factor));
+    public boolean esta(String clave) {
+        NodoTrie nodo = this.buscarNodo(clave);
+        return !(nodo == null || nodo.valor == null);
     }
 
-    public void insertarConTope(
-            String nombre, double factor, double tope) {
-        insertarPromocion(nombre, new Promocion(factor, tope));
+    public T obtener(String clave) {
+        //requiere: this.esta(clave)
+        NodoTrie nodo = this.buscarNodo(clave);
+        return nodo.valor;
     }
 
-    private void insertarPromocion(String nombre, Promocion promocion) {
+    public void definir(String clave, T valor) {
+        // requiere: valor != null; 
         NodoTrie actual = raiz;
-
-        for (int i = 0; i < nombre.length(); i++) {
-            int pos = indice(nombre.charAt(i));
-
-            if (actual.hijos[pos] == null) {
-                actual.hijos[pos] = new NodoTrie();
+        for(int i = 0;i<clave.length();i++) {
+            char c = clave.charAt(i);
+            NodoTrie hijo = actual.hijos.get(c);
+            if(hijo == null) {
+                NodoTrie nuevo = new NodoTrie();
+                actual.hijos.set(c, nuevo);
+                actual = nuevo;
+            } else {
+                actual = hijo;
             }
+        }
+        actual.valor = valor;
+    }
+    
+    public void borrar(String clave) {
+        //requiere: this.esta(clave)
+        NodoTrie actual = this.raiz;
+        ArrayList<NodoTrie> camino = new ArrayList<>();
+        camino.add(actual);
 
-            actual = actual.hijos[pos];
+        for (int i = 0; i < clave.length() && actual != null; i++) {
+            char c = clave.charAt(i);
+            actual = actual.hijos.get(c);
+            camino.add(actual);
         }
 
-        actual.promocion = promocion;
-    }
+        actual.valor = null;
 
-    public boolean existe(String nombre) {
-        return obtenerNodo(nombre) != null
-                && obtenerNodo(nombre).promocion != null;
-    }
-
-    private NodoTrie obtenerNodo(String nombre) {
-        NodoTrie actual = raiz;
-
-        for (int i = 0; i < nombre.length(); i++) {
-            int pos = indice(nombre.charAt(i));
-
-            if (actual.hijos[pos] == null) {
-                return null;
+        for(int j = clave.length();j>0;j--) {
+            NodoTrie nodo = camino.get(j);
+            if(!tieneHijos(nodo) && nodo.valor == null) {
+                NodoTrie padre = camino.get(j-1);
+                padre.hijos.set(clave.charAt(j-1),null);
             }
-
-            actual = actual.hijos[pos];
-        }
-
-        return actual;
-    }
-
-    public void eliminar(String nombre) {
-        NodoTrie nodo = obtenerNodo(nombre);
-
-        if (nodo != null && nodo.promocion != null) {
-            nodo.promocion.factor = 1;
         }
     }
 
-    public double obtenerFactor(String nombre) {
-        NodoTrie nodo = obtenerNodo(nombre);
-
-        if (nodo == null || nodo.promocion == null) {
-            throw new RuntimeException("Promoción inexistente");
-        }
-
-        return nodo.promocion.factor;
-    }
-
-    public boolean tieneTope(String nombre) {
-        NodoTrie nodo = obtenerNodo(nombre);
-
-        if (nodo == null || nodo.promocion == null) {
-            throw new RuntimeException("Promoción inexistente");
-        }
-
-        return nodo.promocion.tieneTope;
-    }
-
-    public double obtenerTope(String nombre) {
-        NodoTrie nodo = obtenerNodo(nombre);
-
-        if (nodo == null || nodo.promocion == null) {
-            throw new RuntimeException("Promoción inexistente");
-        }
-
-        if (!nodo.promocion.tieneTope) {
-            throw new RuntimeException("La promoción no tiene tope");
-        }
-
-        return nodo.promocion.tope;
-    }
-    public double calcularMillas(String nombre, double millasBase) {
-        NodoTrie nodo = obtenerNodo(nombre); // Una sola búsqueda: O(|L|)
-
-        if (nodo == null || nodo.promocion == null) {
-            throw new RuntimeException("Promoción inexistente");
-        }
-
-        Promocion promo = nodo.promocion;
-        double millasConPromo = millasBase * promo.factor;
-
-        if (promo.tieneTope) {
-            if (promo.millasOtorgadas + millasConPromo > promo.tope) {
-                return millasBase;
+    private boolean tieneHijos(NodoTrie nodo) {
+        boolean res = false;
+        for(int i = 0; i < ALFABETO && !res;i++) {
+            if(nodo.hijos.get(i) != null) {
+                res = true;
             }
-
-            promo.millasOtorgadas += millasConPromo;
         }
-
-        return millasConPromo;
+        return res;
     }
 }

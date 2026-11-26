@@ -32,10 +32,10 @@ public class AirMilesTests {
     void registrarUsuarioConReferidor() {
         am.registrarUsuario(1);
         am.registrarUsuarioConReferidor(2, 1);
-        
+
         assertEquals(500.0, am.consultarSaldo(1));
         assertEquals(500.0, am.consultarSaldo(2));
-        
+
         // El mas acumulador es ambiguo (ambos 500) pero ambos están en el sistema
         assertTrue(am.elMasAcumulador() == 1 || am.elMasAcumulador() == 2);
     }
@@ -45,27 +45,27 @@ public class AirMilesTests {
         am.registrarUsuario(1);
         am.registrarUsuario(2);
         am.registrarUsuario(3);
-        
+
         am.iniciarPromocion("PromoVerano", 2.0);
-        
+
         // 100 * 1.0 (bronce) * 2.0 (promo) = 200
-        am.acumularMillas(1, 100, "PromoVerano"); 
-        
+        am.acumularMillas(1, 100, "PromoVerano");
+
         // 50 * 1.0 * 1.0 = 50
         am.acumularMillas(2, 50, "NoPromo");
-        
+
         // 300 * 1.0 * 2.0 = 600
         am.acumularMillas(3, 300, "PromoVerano");
-        
+
         assertEquals(200.0, am.consultarSaldo(1));
         assertEquals(50.0, am.consultarSaldo(2));
         assertEquals(600.0, am.consultarSaldo(3));
-        
+
         int[] top = am.rankingMillas(3);
         assertEquals(3, top[0]);
         assertEquals(1, top[1]);
         assertEquals(2, top[2]);
-        
+
         assertEquals(3, am.elMasAcumulador());
     }
 
@@ -73,16 +73,16 @@ public class AirMilesTests {
     void canjearYElMasCanjeador() {
         am.registrarUsuario(1);
         am.acumularMillas(1, 100, "NoPromo"); // Tiene 100
-        
+
         am.canjearMillas(1, 40); // Le quedan 60
-        
+
         assertEquals(60.0, am.consultarSaldo(1));
         assertEquals(1, am.elMasCanjeador());
-        
+
         am.registrarUsuario(2);
         am.acumularMillas(2, 200, "NoPromo"); // Tiene 200
         am.canjearMillas(2, 50); // Le quedan 150
-        
+
         assertEquals(150.0, am.consultarSaldo(2));
         assertEquals(2, am.elMasCanjeador()); // Gastó 50 vs los 40 de usuario 1
     }
@@ -92,19 +92,20 @@ public class AirMilesTests {
         am.registrarUsuario(1);
         am.registrarUsuario(2);
         am.registrarUsuario(3);
-        
+
         am.acumularMillas(1, 500, "NoPromo");
-        
+
         am.transferirMillas(1, 2, 100);
         assertEquals(400.0, am.consultarSaldo(1));
         assertEquals(100.0, am.consultarSaldo(2));
-        
+
         int[][] exclusivos = am.paresTransferidoresExclusivos();
         assertEquals(1, exclusivos.length);
-        assertTrue((exclusivos[0][0] == 1 && exclusivos[0][1] == 2) || (exclusivos[0][0] == 2 && exclusivos[0][1] == 1));
-        
+        assertTrue(
+                (exclusivos[0][0] == 1 && exclusivos[0][1] == 2) || (exclusivos[0][0] == 2 && exclusivos[0][1] == 1));
+
         am.transferirMillas(1, 3, 50); // Se rompe la exclusividad de 1
-        
+
         assertEquals(0, am.paresTransferidoresExclusivos().length);
     }
 
@@ -112,93 +113,92 @@ public class AirMilesTests {
     void topePromocion() {
         am.registrarUsuario(1);
         am.iniciarPromocionConTope("Flash", 3.0, 300);
-        
-        am.acumularMillas(1, 100, "Flash"); 
+
+        am.acumularMillas(1, 100, "Flash");
         // Gana 100 * 3.0 = 300. Tope alcanzado.
         assertEquals(300.0, am.consultarSaldo(1));
-        
+
         am.acumularMillas(1, 50, "Flash");
         // Promo ya superó tope, asume factor 1.0 (y no hay error)
         // 50 * 1.0 = 50. Total = 350.
         assertEquals(350.0, am.consultarSaldo(1));
     }
 
-    //lean
+    // lean
 
-@Test
+    @Test
     void transicionesCategoriaYFactores() {
         am.registrarUsuario(1);
-        
+
         // 1. Bronce a Plata
         // Vuela 10000 con factor 1.0 (Bronce). Llega a 10000 exactos.
         am.acumularMillas(1, 10000, "NoPromo");
         assertEquals("Plata", am.consultarCategoria(1));
-        
+
         // Vuela 1000 extra. Como es Plata (factor 1.5), suma 1500.
         // Total histórico y disponible = 10000 + 1500 = 11500.
         am.acumularMillas(1, 1000, "NoPromo");
         assertEquals(11500.0, am.consultarSaldo(1));
-        
+
         // 2. Plata a Oro
-        // Necesita llegar a 50000. Le faltan 38500. 
+        // Necesita llegar a 50000. Le faltan 38500.
         // Como es Plata, vuela 38500 / 1.5 = 25666.66... usaremos un número redondo.
         am.acumularMillas(1, 26000, "NoPromo"); // 26000 * 1.5 = 39000
         // Total = 11500 + 39000 = 50500. Alcanza Oro.
         assertEquals("Oro", am.consultarCategoria(1));
-        
+
         // Vuela 1000 extra. Como es Oro (factor 2.0), suma 2000.
         // Total = 50500 + 2000 = 52500.
         am.acumularMillas(1, 1000, "NoPromo");
         assertEquals(52500.0, am.consultarSaldo(1));
     }
 
-@Test
+    @Test
     void categoriaPlatinoNoSumaMillas() {
         am.registrarUsuario(1);
-        
+
         // Lo llevamos a Platino (1.000.000 millas)
         // Volamos 1.000.000 siendo Bronce
         am.acumularMillas(1, 1000000, "NoPromo");
         assertEquals("Platino", am.consultarCategoria(1));
-        
+
         // Intenta acumular más millas siendo Platino (factor 0.0)
         am.acumularMillas(1, 5000, "NoPromo");
-        
+
         // El saldo debe mantenerse intacto porque el factor es 0
         assertEquals(1000000.0, am.consultarSaldo(1));
     }
 
-@Test
+    @Test
     void rankingMillasMenosUsuariosQueN() {
         am.registrarUsuario(1);
         am.registrarUsuario(2);
-        
+
         am.acumularMillas(1, 100, "NoPromo");
         am.acumularMillas(2, 300, "NoPromo");
-        
+
         // Pedimos un ranking de los top 5, pero solo hay 2 usuarios en el sistema
         int[] top = am.rankingMillas(5);
-        
+
         // Debe devolver solo los que existen, ordenados de mayor a menor saldo
         assertEquals(2, top.length);
         assertEquals(2, top[0]);
         assertEquals(1, top[1]);
     }
 
-
-@Test
+    @Test
     void testIntegracionCompleja() {
         // 1. Registro en cadena con referidores
         am.registrarUsuario(1); // U1: 0 totales, 0 disp.
         am.registrarUsuarioConReferidor(2, 1); // U2 referido por U1. Ambos ganan 500.
         am.registrarUsuarioConReferidor(3, 2); // U3 referido por U2. Ambos ganan 500.
         am.registrarUsuarioConReferidor(4, 3); // U4 referido por U3. Ambos ganan 500.
-        
+
         // Verificación de saldos iniciales por bonos
-        assertEquals(500.0, am.consultarSaldo(1));  // Ganó 500 por referir a U2
+        assertEquals(500.0, am.consultarSaldo(1)); // Ganó 500 por referir a U2
         assertEquals(1000.0, am.consultarSaldo(2)); // Ganó 500 (referido) + 500 (referidor de U3)
         assertEquals(1000.0, am.consultarSaldo(3)); // Ganó 500 (referido) + 500 (referidor de U4)
-        assertEquals(500.0, am.consultarSaldo(4));  // Ganó 500 por ser referido
+        assertEquals(500.0, am.consultarSaldo(4)); // Ganó 500 por ser referido
 
         // 2. Creación de promociones
         am.iniciarPromocion("PromoVerano", 2.0);
@@ -216,18 +216,20 @@ public class AirMilesTests {
         assertEquals(13000.0, am.consultarSaldo(1));
 
         // 4. Consumo de promoción con tope
-        // U2 vuela 200 millas con PromoRelampago. Factor Bronce (1.0) * Promo (3.0) = 3.0
+        // U2 vuela 200 millas con PromoRelampago. Factor Bronce (1.0) * Promo (3.0) =
+        // 3.0
         // Gana 600 millas. Tope restante = 300. Disp U2 = 1600.
         am.acumularMillas(2, 200, "PromoRelampago");
         assertEquals(1600.0, am.consultarSaldo(2));
 
-        // U3 vuela 100 millas con PromoRelampago. Factor Bronce (1.0) * Promo (3.0) = 3.0
+        // U3 vuela 100 millas con PromoRelampago. Factor Bronce (1.0) * Promo (3.0) =
+        // 3.0
         // Gana 300 millas. Tope restante = 0 (Se desactiva la promo). Disp U3 = 1300
         am.acumularMillas(3, 100, "PromoRelampago");
         assertEquals(1300.0, am.consultarSaldo(3));
 
         // 5. Transferencias y Canjes
-        // U1 transfiere 3000 millas a U4. 
+        // U1 transfiere 3000 millas a U4.
         // U1 Disp = 10000. U4 Disp = 3500. Las totales no cambian
         am.transferirMillas(1, 4, 3000);
         assertEquals(10000.0, am.consultarSaldo(1));
@@ -247,7 +249,7 @@ public class AirMilesTests {
         // Mas acumulador debe ser U1
         assertEquals(1, am.elMasAcumulador());
 
-        // Mas canjeador: 
+        // Mas canjeador:
         // U1 perdió 3000 (transferidas)
         // U2 perdió 600 (canjeadas)
         // El mas canjeador debe ser U1 porque suma canjes + transferencias enviadas
@@ -259,57 +261,59 @@ public class AirMilesTests {
         // U3: 1300
         // U2: 1000
         int[] top = am.rankingMillas(4);
-        assertArrayEquals(new int[]{1, 4, 3, 2}, top);
-        
+        assertArrayEquals(new int[] { 1, 4, 3, 2 }, top);
+
         // Pares transferidores exclusivos: solo hubo una transferencia (1 a 4)
         int[][] exclusivos = am.paresTransferidoresExclusivos();
         assertEquals(1, exclusivos.length);
-        assertTrue((exclusivos[0][0] == 1 && exclusivos[0][1] == 4) || 
-                   (exclusivos[0][0] == 4 && exclusivos[0][1] == 1));
+        assertTrue((exclusivos[0][0] == 1 && exclusivos[0][1] == 4) ||
+                (exclusivos[0][0] == 4 && exclusivos[0][1] == 1));
     }
 
-@Test
+    @Test
     void testRankingInmutableAnteMultiplesConsultas() {
         am.registrarUsuario(1);
         am.registrarUsuario(2);
         am.registrarUsuario(3);
-        
+
         am.acumularMillas(1, 100, "NoPromo");
         am.acumularMillas(2, 500, "NoPromo");
         am.acumularMillas(3, 300, "NoPromo");
-        
+
         // Primera consulta
         int[] top1 = am.rankingMillas(3);
-        assertArrayEquals(new int[]{2, 3, 1}, top1);
-        
+        assertArrayEquals(new int[] { 2, 3, 1 }, top1);
+
         // Segunda consulta inmediata: debe devolver EXACTAMENTE lo mismo
         // Si la reinserción en el MaxHeap falló, este test se rompe.
         int[] top2 = am.rankingMillas(3);
-        assertArrayEquals(new int[]{2, 3, 1}, top2);
+        assertArrayEquals(new int[] { 2, 3, 1 }, top2);
     }
 
-
-
-@Test
+    @Test
     void testRupturaDeHandleParesExclusivos() {
-        am.registrarUsuario(1); am.registrarUsuario(2);
-        am.registrarUsuario(3); am.registrarUsuario(4);
-        
+        am.registrarUsuario(1);
+        am.registrarUsuario(2);
+        am.registrarUsuario(3);
+        am.registrarUsuario(4);
+
         am.acumularMillas(1, 1000, "NoPromo");
         am.acumularMillas(3, 1000, "NoPromo");
-        
+
         // Se forma par (1, 2)
-        am.transferirMillas(1, 2, 100); 
+        am.transferirMillas(1, 2, 100);
         // Se forma par (3, 4)
-        am.transferirMillas(3, 4, 100); 
-        
+        am.transferirMillas(3, 4, 100);
+
         assertEquals(2, am.paresTransferidoresExclusivos().length);
-        
-        // Usuario 2 transfiere a 3. Esto rompe la exclusividad de 2 (y elimina el par 1-2).
+
+        // Usuario 2 transfiere a 3. Esto rompe la exclusividad de 2 (y elimina el par
+        // 1-2).
         // Pero el par (3, 4) también se rompe porque 3 ahora interactuó con 2.
         am.transferirMillas(2, 3, 50);
-        
-        // Ambos handles (el del par 1-2 y el del 3-4) deberían haber llamado a eliminar()
+
+        // Ambos handles (el del par 1-2 y el del 3-4) deberían haber llamado a
+        // eliminar()
         assertEquals(0, am.paresTransferidoresExclusivos().length);
     }
 
@@ -329,7 +333,8 @@ public class AirMilesTests {
 
     @Test
     void variosParesExclusivos() {
-        for (int id = 1; id <= 6; id++) am.registrarUsuario(id);
+        for (int id = 1; id <= 6; id++)
+            am.registrarUsuario(id);
         am.acumularMillas(1, 1000, "NoPromo");
         am.acumularMillas(3, 1000, "NoPromo");
         am.acumularMillas(5, 1000, "NoPromo");
@@ -345,9 +350,12 @@ public class AirMilesTests {
             assertNotNull(par);
             int a = Math.min(par[0], par[1]);
             int b = Math.max(par[0], par[1]);
-            if (a == 1 && b == 2) par12 = true;
-            if (a == 3 && b == 4) par34 = true;
-            if (a == 5 && b == 6) par56 = true;
+            if (a == 1 && b == 2)
+                par12 = true;
+            if (a == 3 && b == 4)
+                par34 = true;
+            if (a == 5 && b == 6)
+                par56 = true;
         }
         assertTrue(par12 && par34 && par56);
     }
@@ -364,9 +372,10 @@ public class AirMilesTests {
         am.acumularMillas(4, 100, "NoPromo");
         am.rankingMillas(3);
 
-        // Después de consultar el ranking, los cambios de saldo lo tienen que seguir actualizando
+        // Después de consultar el ranking, los cambios de saldo lo tienen que seguir
+        // actualizando
         am.acumularMillas(3, 500, "NoPromo"); // 3 queda con 600
-        assertArrayEquals(new int[]{3, 2, 1, 4}, am.rankingMillas(4));
+        assertArrayEquals(new int[] { 3, 2, 1, 4 }, am.rankingMillas(4));
     }
 
     @Test
@@ -388,14 +397,15 @@ public class AirMilesTests {
         }
     }
 
-        @Test
+    @Test
     void transferenciaRecibidaNoSumaATotales() {
         am.registrarUsuario(1);
         am.registrarUsuario(2);
         am.acumularMillas(1, 9000, "NoPromo");
         am.acumularMillas(2, 5000, "NoPromo");
 
-        // 2 recibe 6000: se suman a sus disponibles, pero no a sus totales (siguen en 5000)
+        // 2 recibe 6000: se suman a sus disponibles, pero no a sus totales (siguen en
+        // 5000)
         am.transferirMillas(1, 2, 6000);
         assertEquals(11000.0, am.consultarSaldo(2));
         assertEquals("Bronce", am.consultarCategoria(2));
@@ -418,7 +428,6 @@ public class AirMilesTests {
         assertEquals(300.0, am.consultarSaldo(1));
     }
 
-
     // sistema para el stress test (usuarios con ids 1..maxId)
     private static class Modelo {
         int registrados = 0;
@@ -437,16 +446,22 @@ public class AirMilesTests {
         }
 
         String categoria(int id) {
-            if (totales[id] < 10000) return "Bronce";
-            if (totales[id] < 50000) return "Plata";
-            if (totales[id] < 1000000) return "Oro";
+            if (totales[id] < 10000)
+                return "Bronce";
+            if (totales[id] < 50000)
+                return "Plata";
+            if (totales[id] < 1000000)
+                return "Oro";
             return "Platino";
         }
 
         double factorCategoria(int id) {
-            if (totales[id] < 10000) return 1.0;
-            if (totales[id] < 50000) return 1.5;
-            if (totales[id] < 1000000) return 2.0;
+            if (totales[id] < 10000)
+                return 1.0;
+            if (totales[id] < 50000)
+                return 1.5;
+            if (totales[id] < 1000000)
+                return 2.0;
             return 0.0;
         }
 
@@ -464,9 +479,11 @@ public class AirMilesTests {
             gastar(origen, cantidad);
             disponibles[destino] += cantidad;
             transfirieron[origen][destino] = transfirieron[destino][origen] = true;
-            for (int[] par : new int[][]{{origen, destino}, {destino, origen}}) {
-                if (contraparte[par[0]] == 0) contraparte[par[0]] = par[1];
-                else if (contraparte[par[0]] != par[1]) variasContrapartes[par[0]] = true;
+            for (int[] par : new int[][] { { origen, destino }, { destino, origen } }) {
+                if (contraparte[par[0]] == 0)
+                    contraparte[par[0]] = par[1];
+                else if (contraparte[par[0]] != par[1])
+                    variasContrapartes[par[0]] = true;
             }
         }
 
@@ -477,7 +494,8 @@ public class AirMilesTests {
 
         double maximo(double[] valores) {
             double max = 0;
-            for (int id = 1; id <= registrados; id++) max = Math.max(max, valores[id]);
+            for (int id = 1; id <= registrados; id++)
+                max = Math.max(max, valores[id]);
             return max;
         }
     }
@@ -488,14 +506,15 @@ public class AirMilesTests {
         final int OPERACIONES = 20000;
         java.util.Random rnd = new java.util.Random(1234);
         Modelo m = new Modelo(USUARIOS);
-        String[] promos = {"PromoDoble", "PromoTriple"};
-        double[] factores = {2.0, 3.0};
+        String[] promos = { "PromoDoble", "PromoTriple" };
+        double[] factores = { 2.0, 3.0 };
         am.iniciarPromocion(promos[0], factores[0]);
         am.iniciarPromocion(promos[1], factores[1]);
         am.registrarUsuario(++m.registrados);
 
         for (int op = 0; op < OPERACIONES; op++) {
-            int id = rnd.nextInt(5) == 0 ? 1 + rnd.nextInt(Math.min(10, m.registrados)) : 1 + rnd.nextInt(m.registrados);
+            int id = rnd.nextInt(5) == 0 ? 1 + rnd.nextInt(Math.min(10, m.registrados))
+                    : 1 + rnd.nextInt(m.registrados);
             int r = rnd.nextInt(100);
 
             if (r < 10 && m.registrados < USUARIOS) {
@@ -535,10 +554,12 @@ public class AirMilesTests {
             assertEquals(m.disponibles[id], am.consultarSaldo(id));
             assertEquals(m.categoria(id), am.consultarCategoria(id));
             assertEquals(m.maximo(m.totales), m.totales[am.elMasAcumulador()]);
-            if (m.maximo(m.gastadas) > 0) assertEquals(m.maximo(m.gastadas), m.gastadas[am.elMasCanjeador()]);
+            if (m.maximo(m.gastadas) > 0)
+                assertEquals(m.maximo(m.gastadas), m.gastadas[am.elMasCanjeador()]);
         }
 
-        for (int id = 1; id <= m.registrados; id++) assertEquals(m.disponibles[id], am.consultarSaldo(id));
+        for (int id = 1; id <= m.registrados; id++)
+            assertEquals(m.disponibles[id], am.consultarSaldo(id));
         verificarRanking(m, m.registrados);
         verificarPares(m);
     }
@@ -556,7 +577,9 @@ public class AirMilesTests {
     private void verificarPares(Modelo m) {
         int[][] pares = am.paresTransferidoresExclusivos();
         int esperados = 0;
-        for (int id = 1; id <= m.registrados; id++) if (m.contraparte[id] > id && m.esPar(id, m.contraparte[id])) esperados++;
+        for (int id = 1; id <= m.registrados; id++)
+            if (m.contraparte[id] > id && m.esPar(id, m.contraparte[id]))
+                esperados++;
         assertEquals(esperados, pares.length);
         boolean[] visto = new boolean[m.registrados + 1];
         for (int[] par : pares) {
@@ -566,339 +589,353 @@ public class AirMilesTests {
             visto[par[0]] = visto[par[1]] = true;
         }
     }
-//TEST AGREGADOS PARA PROBAR CASOS BORDE
+    // TEST AGREGADOS PARA PROBAR CASOS BORDE
 
-// Probar el borde de un usuario que llega justo a la categoría Oro (50000 millas)
-@Test
+    // Probar el borde de un usuario que llega justo a la categoría Oro (50000
+    // millas)
+    @Test
     void millasCategoriaOro() {
         am.registrarUsuario(1);
-        
+
         am.acumularMillas(1, 50000, "NoPromo");
         assertEquals("Oro", am.consultarCategoria(1));
     }
 
-// Subir categoría con bono referidor
-@Test
+    // Subir categoría con bono referidor
+    @Test
     void subeConBonoReferidor() {
         am.registrarUsuario(1);
-        
+
         am.acumularMillas(1, 9500, "NoPromo");
         assertEquals("Bronce", am.consultarCategoria(1));
 
-        am.registrarUsuarioConReferidor(2,1);
+        am.registrarUsuarioConReferidor(2, 1);
         assertEquals("Bronce", am.consultarCategoria(2));
         assertEquals("Plata", am.consultarCategoria(1));
     }
 
-@Test
-void canjearTodoElSaldo() {
-    am.registrarUsuario(1);
-    am.acumularMillas(1, 500, "NoPromo");
+    @Test
+    void canjearTodoElSaldo() {
+        am.registrarUsuario(1);
+        am.acumularMillas(1, 500, "NoPromo");
 
-    am.canjearMillas(1, 500);
+        am.canjearMillas(1, 500);
 
-    assertEquals(0.0, am.consultarSaldo(1));
-    assertEquals(1, am.elMasCanjeador());
-}
-
-
-
-@Test
-void transferirTodoElSaldo() {
-    am.registrarUsuario(1);
-    am.registrarUsuario(2);
-
-    am.acumularMillas(1, 500, "NoPromo");
-    am.transferirMillas(1, 2, 500);
-
-    assertEquals(0.0, am.consultarSaldo(1));
-    assertEquals(500.0, am.consultarSaldo(2));
-}
-
-@Test
-void transferenciaMutua() { 
-    am.registrarUsuario(1);
-    am.registrarUsuario(2);
-
-    am.acumularMillas(1, 500, "NoPromo");
-    am.acumularMillas(2, 500, "NoPromo");
-
-    am.transferirMillas(1, 2, 100);
-    am.transferirMillas(2, 1, 50);
-
-    int[][] pares = am.paresTransferidoresExclusivos();
-
-    assertEquals(1, pares.length);
-    assertTrue(
-        (pares[0][0] == 1 && pares[0][1] == 2) ||
-        (pares[0][0] == 2 && pares[0][1] == 1)
-    );
-}
-
-@Test
-void reiniciarPromocion() {
-    am.registrarUsuario(1);
-
-    am.iniciarPromocion("Promo", 3.0);
-    am.acumularMillas(1, 100, "Promo");
-
-    am.finalizarPromocion("Promo");
-
-    am.iniciarPromocion("Promo", 2.0);
-    am.acumularMillas(1, 100, "Promo");
-
-    assertEquals(500.0, am.consultarSaldo(1));
-}
-
-@Test
-void rankingConCeroUsuarios() {
-    assertEquals(0, am.rankingMillas(5).length);
-}
-
-
-@Test
-void paresExclusivosSinTransferencias() {
-    am.registrarUsuario(1);
-
-    assertEquals(0, am.paresTransferidoresExclusivos().length);
-}
-
-@Test
-void unUsuarioTransfiereADosPersonas() { // PARECIDO A transferirMillasYParesExclusivos
-    for (int i = 1; i <= 3; i++) {
-        am.registrarUsuario(i);
-    } 
-
-    am.acumularMillas(1, 1000, "NoPromo");
-
-    am.transferirMillas(1, 2, 100);
-    assertEquals(1, am.paresTransferidoresExclusivos().length);
-
-    am.transferirMillas(1, 3, 100);
-    assertEquals(0, am.paresTransferidoresExclusivos().length);
-}
-
-@Test
-void romperUnParNoAfectaAlOtro() {
-    for (int i = 1; i <= 5; i++) {
-        am.registrarUsuario(i);
+        assertEquals(0.0, am.consultarSaldo(1));
+        assertEquals(1, am.elMasCanjeador());
     }
 
-    am.acumularMillas(1, 1000, "NoPromo");
-    am.acumularMillas(3, 1000, "NoPromo");
-    am.acumularMillas(5, 1000, "NoPromo");
+    @Test
+    void transferirTodoElSaldo() {
+        am.registrarUsuario(1);
+        am.registrarUsuario(2);
 
-    am.transferirMillas(1, 2, 100);
-    am.transferirMillas(3, 4, 100);
+        am.acumularMillas(1, 500, "NoPromo");
+        am.transferirMillas(1, 2, 500);
 
-    assertEquals(2, am.paresTransferidoresExclusivos().length);
-
-    // Rompe únicamente el par 1-2
-    am.transferirMillas(1, 5, 100);
-
-    int[][] pares = am.paresTransferidoresExclusivos();
-
-    assertEquals(1, pares.length);
-    assertTrue(
-        (pares[0][0] == 3 && pares[0][1] == 4) ||
-        (pares[0][0] == 4 && pares[0][1] == 3)
-    );
-}
-
-@Test
-void transferenciasMutuasNoDuplicanPar() {
-    am.registrarUsuario(1);
-    am.registrarUsuario(2);
-
-    am.acumularMillas(1, 1000, "NoPromo");
-    am.acumularMillas(2, 1000, "NoPromo");
-
-    am.transferirMillas(1, 2, 100);
-    am.transferirMillas(2, 1, 100);
-
-    int[][] pares = am.paresTransferidoresExclusivos();
-
-    assertEquals(1, pares.length);
-}
-
-@Test
-void terceroRompeParExclusivo() {
-    for (int i = 1; i <= 3; i++) {
-        am.registrarUsuario(i);
+        assertEquals(0.0, am.consultarSaldo(1));
+        assertEquals(500.0, am.consultarSaldo(2));
     }
 
-    am.acumularMillas(1, 1000, "NoPromo");
+    @Test
+    void transferenciaMutua() {
+        am.registrarUsuario(1);
+        am.registrarUsuario(2);
 
-    am.transferirMillas(1, 2, 100);
+        am.acumularMillas(1, 500, "NoPromo");
+        am.acumularMillas(2, 500, "NoPromo");
 
-    assertEquals(1, am.paresTransferidoresExclusivos().length);
+        am.transferirMillas(1, 2, 100);
+        am.transferirMillas(2, 1, 50);
 
-    am.transferirMillas(2, 3, 50);
+        int[][] pares = am.paresTransferidoresExclusivos();
 
-    assertEquals(0, am.paresTransferidoresExclusivos().length);
-}
-
-@Test
-void usuarioRecibeDeDosPersonas() {
-    for (int i = 1; i <= 3; i++) {
-        am.registrarUsuario(i);
+        assertEquals(1, pares.length);
+        assertTrue(pares[0][0] == 1 && pares[0][1] == 2);
     }
 
-    am.acumularMillas(1, 1000, "NoPromo");
-    am.acumularMillas(2, 1000, "NoPromo");
+    @Test
+    void reiniciarPromocion() {
+        am.registrarUsuario(1);
 
-    am.transferirMillas(1, 3, 100);
-    assertEquals(1, am.paresTransferidoresExclusivos().length);
+        am.iniciarPromocion("Promo", 3.0);
+        am.acumularMillas(1, 100, "Promo");
 
-    am.transferirMillas(2, 3, 100);
+        am.finalizarPromocion("Promo");
 
-    assertEquals(0, am.paresTransferidoresExclusivos().length);
-}
-@Test
-void paresExclusivosInmutablesAnteConsultas() {
-    am.registrarUsuario(1);
-    am.registrarUsuario(2);
+        am.iniciarPromocion("Promo", 2.0);
+        am.acumularMillas(1, 100, "Promo");
 
-    am.acumularMillas(1, 1000, "NoPromo");
-    am.transferirMillas(1, 2, 100);
-
-    int[][] primera = am.paresTransferidoresExclusivos();
-    int[][] segunda = am.paresTransferidoresExclusivos();
-    int[][] tercera = am.paresTransferidoresExclusivos();
-
-    assertEquals(1, primera.length);
-    assertEquals(1, segunda.length);
-    assertEquals(1, tercera.length);
-}
-
-@Test
-void ningunUsuarioPerteneceADosParesExclusivos() { //PARECIDO A variosParesExclusivos
-    for (int i = 1; i <= 6; i++) {
-        am.registrarUsuario(i);
+        assertEquals(500.0, am.consultarSaldo(1));
     }
 
-    for (int i = 1; i <= 5; i += 2) {
-        am.acumularMillas(i, 1000, "NoPromo");
-        am.transferirMillas(i, i + 1, 100);
+    @Test
+    void rankingConCeroUsuarios() {
+        assertEquals(0, am.rankingMillas(5).length);
     }
 
-    int[][] pares = am.paresTransferidoresExclusivos();
+    @Test
+    void paresExclusivosSinTransferencias() {
+        am.registrarUsuario(1);
 
-    boolean[] vistos = new boolean[7];
-
-    assertEquals(3, pares.length);
-
-    for (int[] par : pares) {
-        assertFalse(vistos[par[0]]);
-        assertFalse(vistos[par[1]]);
-
-        vistos[par[0]] = true;
-        vistos[par[1]] = true;
+        assertEquals(0, am.paresTransferidoresExclusivos().length);
     }
-}
 
-@Test
-void elMasCanjeadorEmpateYDesempate() {
-    am.registrarUsuario(1);
-    am.registrarUsuario(2);
-    am.acumularMillas(1, 100, "NoPromo");
-    am.acumularMillas(2, 100, "NoPromo");
+    @Test
+    void unUsuarioTransfiereADosPersonas() { // PARECIDO A transferirMillasYParesExclusivos
+        for (int i = 1; i <= 3; i++) {
+            am.registrarUsuario(i);
+        }
 
-    // 1 pierde 50 canjeando y 2 pierde 50 transfiriendo: empate
-    am.canjearMillas(1, 50);
-    am.transferirMillas(2, 1, 50);
-    int res = am.elMasCanjeador();
-    assertTrue(res == 1 || res == 2);
+        am.acumularMillas(1, 1000, "NoPromo");
 
-    // 2 transfiere 1 milla más: pasa a ser el único que más perdió (51 vs 50)
-    am.transferirMillas(2, 1, 1);
-    assertEquals(2, am.elMasCanjeador());
+        am.transferirMillas(1, 2, 100);
+        assertEquals(1, am.paresTransferidoresExclusivos().length);
 
-    // 1 canjea 2 más y lo vuelve a superar (52 vs 51)
-    am.canjearMillas(1, 2);
-    assertEquals(1, am.elMasCanjeador());
-}
+        am.transferirMillas(1, 3, 100);
+        assertEquals(0, am.paresTransferidoresExclusivos().length);
 
-@Test
-void bonoDeReferidoActualizaElMasAcumuladorYRanking() {
-    am.registrarUsuario(1);
-    am.registrarUsuario(2);
-    am.acumularMillas(1, 550, "NoPromo");
-    am.acumularMillas(2, 100, "NoPromo");
-    assertEquals(1, am.elMasAcumulador());
-
-    // 2 refiere a 3: 2 queda con 600 totales y pasa a 1 (550) solo por el bono
-    am.registrarUsuarioConReferidor(3, 2);
-    assertEquals(2, am.elMasAcumulador());
-
-    // El ranking también se actualiza: 2 (600), 1 (550), 3 (500)
-    assertArrayEquals(new int[]{2, 1, 3}, am.rankingMillas(3));
-}
-
-@Test
-void canjearNoBajaLaCategoria() {
-    am.registrarUsuario(1);
-    am.acumularMillas(1, 12000, "NoPromo"); // 12000 totales: Plata
-    assertEquals("Plata", am.consultarCategoria(1));
-
-    // Canjear baja las disponibles pero no las totales
-    am.canjearMillas(1, 11000);
-    assertEquals(1000.0, am.consultarSaldo(1));
-    assertEquals("Plata", am.consultarCategoria(1));
-
-    // El factor depende de las totales: sigue acumulando con 1.5
-    am.acumularMillas(1, 100, "NoPromo");
-    assertEquals(1150.0, am.consultarSaldo(1));
-}
-
-@Test
-void topeCompartidoEntreUsuariosYReinicio() {
-    am.registrarUsuario(1);
-    am.registrarUsuario(2);
-    am.iniciarPromocionConTope("Flash", 3.0, 300);
-
-    // El tope es global: entre los dos usuarios llegan justo a 300
-    am.acumularMillas(1, 50, "Flash"); // 150
-    am.acumularMillas(2, 50, "Flash"); // 150
-    assertEquals(150.0, am.consultarSaldo(1));
-    assertEquals(150.0, am.consultarSaldo(2));
-
-    // Tope alcanzado: ya no se aplica el factor de la promoción
-    am.acumularMillas(2, 10, "Flash");
-    assertEquals(160.0, am.consultarSaldo(2));
-
-    // La promoción agotada se puede volver a iniciar, con un tope nuevo
-    am.iniciarPromocionConTope("Flash", 2.0, 100);
-    am.acumularMillas(1, 50, "Flash"); // 100
-    assertEquals(250.0, am.consultarSaldo(1));
-}
-
-@Test
-void parRotoNoSeVuelveAFormar() {
-    for (int i = 1; i <= 6; i++) {
-        am.registrarUsuario(i);
+        assertEquals(800.0, am.consultarSaldo(1));
+        assertEquals(100.0, am.consultarSaldo(2));
+        assertEquals(100.0, am.consultarSaldo(3));
     }
-    am.acumularMillas(1, 1000, "NoPromo");
-    am.acumularMillas(2, 1000, "NoPromo");
-    am.acumularMillas(5, 1000, "NoPromo");
 
-    // Se forma el par (1, 2) y se rompe cuando 1 transfiere a 3
-    am.transferirMillas(1, 2, 100);
-    am.transferirMillas(1, 3, 100);
-    assertEquals(0, am.paresTransferidoresExclusivos().length);
+    @Test
+    void romperUnParNoAfectaAlOtro() {
+        for (int i = 1; i <= 5; i++) {
+            am.registrarUsuario(i);
+        }
 
-    // 1 y 2 vuelven a transferirse entre sí, pero 1 ya no es exclusivo
-    am.transferirMillas(2, 1, 50);
-    assertEquals(0, am.paresTransferidoresExclusivos().length);
+        am.acumularMillas(1, 1000, "NoPromo");
+        am.acumularMillas(3, 1000, "NoPromo");
+        am.acumularMillas(5, 1000, "NoPromo");
 
-    // 2 tampoco forma par con un usuario nuevo: ya transfirió con 1
-    am.transferirMillas(2, 4, 50);
-    assertEquals(0, am.paresTransferidoresExclusivos().length);
+        am.transferirMillas(1, 2, 100);
+        am.transferirMillas(3, 4, 100);
 
-    // Entre usuarios que no transfirieron con nadie, el par se forma igual
-    am.transferirMillas(5, 6, 100);
-    int[][] pares = am.paresTransferidoresExclusivos();
-    assertEquals(1, pares.length);
-    assertTrue((pares[0][0] == 5 && pares[0][1] == 6) || (pares[0][0] == 6 && pares[0][1] == 5));
+        assertEquals(2, am.paresTransferidoresExclusivos().length);
+
+        // Rompe únicamente el par 1-2
+        am.transferirMillas(1, 5, 100);
+
+        int[][] pares = am.paresTransferidoresExclusivos();
+
+        assertEquals(1, pares.length);
+        assertTrue(pares[0][0] == 3 && pares[0][1] == 4);
+
+        assertEquals(800.0, am.consultarSaldo(1));
+        assertEquals(100.0, am.consultarSaldo(2));
+        assertEquals(900.0, am.consultarSaldo(3));
+        assertEquals(100.0, am.consultarSaldo(4));
+        assertEquals(1100.0, am.consultarSaldo(5));
+    }
+
+    @Test
+    void transferenciasMutuasNoDuplicanPar() {
+        am.registrarUsuario(1);
+        am.registrarUsuario(2);
+
+        am.acumularMillas(1, 1000, "NoPromo");
+        am.acumularMillas(2, 1000, "NoPromo");
+
+        am.transferirMillas(1, 2, 100);
+        am.transferirMillas(2, 1, 100);
+
+        int[][] pares = am.paresTransferidoresExclusivos();
+
+        assertEquals(1, pares.length);
+        assertTrue(pares[0][0] == 1 && pares[0][1] == 2);
+
+        assertEquals(1000.0, am.consultarSaldo(1));
+        assertEquals(1000.0, am.consultarSaldo(2));
+
+    }
+
+    @Test
+    void terceroRompeParExclusivo() {
+        for (int i = 1; i <= 3; i++) {
+            am.registrarUsuario(i);
+        }
+
+        am.acumularMillas(1, 1000, "NoPromo");
+
+        am.transferirMillas(1, 2, 100);
+
+        assertEquals(1, am.paresTransferidoresExclusivos().length);
+
+        am.transferirMillas(2, 3, 50);
+
+        assertEquals(0, am.paresTransferidoresExclusivos().length);
+
+        assertEquals(900.0, am.consultarSaldo(1));
+        assertEquals(50.0, am.consultarSaldo(2));
+        assertEquals(50.0, am.consultarSaldo(3));
+    }
+
+    @Test
+    void usuarioRecibeDeDosPersonas() {
+        for (int i = 1; i <= 3; i++) {
+            am.registrarUsuario(i);
+        }
+
+        am.acumularMillas(1, 1000, "NoPromo");
+        am.acumularMillas(2, 1000, "NoPromo");
+
+        am.transferirMillas(1, 3, 100);
+        assertEquals(1, am.paresTransferidoresExclusivos().length);
+
+        am.transferirMillas(2, 3, 100);
+
+        assertEquals(0, am.paresTransferidoresExclusivos().length);
+
+        assertEquals(900.0, am.consultarSaldo(1));
+        assertEquals(900.0, am.consultarSaldo(2));
+        assertEquals(200.0, am.consultarSaldo(3));
+    }
+
+    @Test
+    void paresExclusivosInmutablesAnteConsultas() {
+        // Consultar los pares es de solo lectura: varias consultas seguidas devuelven lo mismo
+        am.registrarUsuario(1);
+        am.registrarUsuario(2);
+
+        am.acumularMillas(1, 1000, "NoPromo");
+        am.transferirMillas(1, 2, 100);
+
+        int[][] primera = am.paresTransferidoresExclusivos();
+        int[][] segunda = am.paresTransferidoresExclusivos();
+        int[][] tercera = am.paresTransferidoresExclusivos();
+
+        assertEquals(1, primera.length);
+        assertTrue(primera[0][0] == 1 && primera[0][1] == 2);
+        assertEquals(1, segunda.length);
+        assertTrue(segunda[0][0] == 1 && segunda[0][1] == 2);
+        assertEquals(1, tercera.length);
+        assertTrue(tercera[0][0] == 1 && tercera[0][1] == 2);
+    }
+
+    @Test
+    void ningunUsuarioPerteneceADosParesExclusivos() { // PARECIDO A variosParesExclusivos
+        for (int i = 1; i <= 6; i++) {
+            am.registrarUsuario(i);
+        }
+
+        for (int i = 1; i <= 5; i += 2) {
+            am.acumularMillas(i, 1000, "NoPromo");
+            am.transferirMillas(i, i + 1, 100);
+        }
+
+        int[][] pares = am.paresTransferidoresExclusivos();
+
+        assertEquals(3, pares.length);
+        assertTrue(pares[0][0] == 1 && pares[0][1] == 2);
+        assertTrue(pares[1][0] == 3 && pares[1][1] == 4);
+        assertTrue(pares[2][0] == 5 && pares[2][1] == 6);
+    }
+
+    @Test
+    void elMasCanjeadorEmpateYDesempate() {
+        am.registrarUsuario(1);
+        am.registrarUsuario(2);
+        am.acumularMillas(1, 100, "NoPromo");
+        am.acumularMillas(2, 100, "NoPromo");
+
+        // 1 pierde 50 canjeando y 2 pierde 50 transfiriendo: empate
+        am.canjearMillas(1, 50);
+        am.transferirMillas(2, 1, 50);
+        int res = am.elMasCanjeador();
+        assertTrue(res == 1 || res == 2);
+
+        // 2 transfiere 1 milla más: pasa a ser el único que más perdió (51 vs 50)
+        am.transferirMillas(2, 1, 1);
+        assertEquals(2, am.elMasCanjeador());
+
+        // 1 canjea 2 más y lo vuelve a superar (52 vs 51)
+        am.canjearMillas(1, 2);
+        assertEquals(1, am.elMasCanjeador());
+    }
+
+    @Test
+    void bonoDeReferidoActualizaElMasAcumuladorYRanking() {
+        am.registrarUsuario(1);
+        am.registrarUsuario(2);
+        am.acumularMillas(1, 550, "NoPromo");
+        am.acumularMillas(2, 100, "NoPromo");
+        assertEquals(1, am.elMasAcumulador());
+
+        // 2 refiere a 3: 2 queda con 600 totales y pasa a 1 (550) solo por el bono
+        am.registrarUsuarioConReferidor(3, 2);
+        assertEquals(2, am.elMasAcumulador());
+
+        // El ranking también se actualiza: 2 (600), 1 (550), 3 (500)
+        assertArrayEquals(new int[] { 2, 1, 3 }, am.rankingMillas(3));
+    }
+
+    @Test
+    void canjearNoBajaLaCategoria() {
+        am.registrarUsuario(1);
+        am.acumularMillas(1, 12000, "NoPromo"); // 12000 totales: Plata
+        assertEquals("Plata", am.consultarCategoria(1));
+
+        // Canjear baja las disponibles pero no las totales
+        am.canjearMillas(1, 11000);
+        assertEquals(1000.0, am.consultarSaldo(1));
+        assertEquals("Plata", am.consultarCategoria(1));
+
+        // El factor depende de las totales: sigue acumulando con 1.5
+        am.acumularMillas(1, 100, "NoPromo");
+        assertEquals(1150.0, am.consultarSaldo(1));
+    }
+
+    @Test
+    void topeCompartidoEntreUsuariosYReinicio() {
+        am.registrarUsuario(1);
+        am.registrarUsuario(2);
+        am.iniciarPromocionConTope("Flash", 3.0, 300);
+
+        // El tope es global: entre los dos usuarios llegan justo a 300
+        am.acumularMillas(1, 50, "Flash"); // 150
+        am.acumularMillas(2, 50, "Flash"); // 150
+        assertEquals(150.0, am.consultarSaldo(1));
+        assertEquals(150.0, am.consultarSaldo(2));
+
+        // Tope alcanzado: la promoción se eliminó del sistema, así que se acumula con
+        // factor 1
+        am.acumularMillas(2, 10, "Flash");
+        assertEquals(160.0, am.consultarSaldo(2));
+
+        // Como ya no está en el sistema, se puede volver a iniciar con un tope nuevo
+        am.iniciarPromocionConTope("Flash", 2.0, 100);
+        am.acumularMillas(1, 50, "Flash"); // 100
+        assertEquals(250.0, am.consultarSaldo(1));
+    }
+
+    @Test
+    void parRotoNoSeVuelveAFormar() {
+        for (int i = 1; i <= 6; i++) {
+            am.registrarUsuario(i);
+        }
+        am.acumularMillas(1, 1000, "NoPromo");
+        am.acumularMillas(2, 1000, "NoPromo");
+        am.acumularMillas(5, 1000, "NoPromo");
+
+        // Se forma el par (1, 2) y se rompe cuando 1 transfiere a 3
+        am.transferirMillas(1, 2, 100);
+        am.transferirMillas(1, 3, 100);
+        assertEquals(0, am.paresTransferidoresExclusivos().length);
+
+        // 1 y 2 vuelven a transferirse entre sí, pero 1 ya no es exclusivo
+        am.transferirMillas(2, 1, 50);
+        assertEquals(0, am.paresTransferidoresExclusivos().length);
+
+        // 2 tampoco forma par con un usuario nuevo: ya transfirió con 1
+        am.transferirMillas(2, 4, 50);
+        assertEquals(0, am.paresTransferidoresExclusivos().length);
+
+        // Entre usuarios que no transfirieron con nadie, el par se forma igual
+        am.transferirMillas(5, 6, 100);
+        int[][] pares = am.paresTransferidoresExclusivos();
+        assertEquals(1, pares.length);
+        assertTrue((pares[0][0] == 5 && pares[0][1] == 6) || (pares[0][0] == 6 && pares[0][1] == 5));
     }
 }

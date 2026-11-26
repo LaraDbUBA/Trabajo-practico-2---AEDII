@@ -1,6 +1,5 @@
 package aed.tp2;
 
-import java.rmi.UnexpectedException;
 import java.util.ArrayList;
 
 public class AirMiles implements SistemaAirMiles {
@@ -8,13 +7,14 @@ public class AirMiles implements SistemaAirMiles {
     private Usuario maxAcumulador;
     private Usuario maxCanjeador;
     private MaxHeap<Usuario> heapMillas;
-    private Trie promociones;
+    private Trie<Promocion> promociones;
     private ListaEnlazada<Relacion> paresExclusivos;
 
     public AirMiles() {
         usuarios = new ABB<>(); // O(1)
-        promociones = new Trie(); // O(1)
-        promociones.insertar("NoPromo", 1.0);
+        promociones = new Trie<>(); // O(1)
+        Promocion noPromo = new Promocion(1.0);
+        promociones.definir("NoPromo", noPromo);
         paresExclusivos = new ListaEnlazada<>();
         heapMillas = new MaxHeap<>();
     }
@@ -64,7 +64,7 @@ public class AirMiles implements SistemaAirMiles {
     }
 
     public void acumularMillas(int id, double distancia, String nombrePromo) {
-        // requiere: el usuario existe en el sistema, distancia > 0,
+        // requiere: el usuario existe en el sistema, distancia > 0
         Handle<Usuario> h_usuario = buscarHandleUsuario(id); // O(logU) promedio y O(U) en peor caso
         Usuario u = h_usuario.valor(); // O(1)
 
@@ -72,8 +72,7 @@ public class AirMiles implements SistemaAirMiles {
 
         double millasBase = distancia * factorCategoria; // O(1)
 
-        // Busca la promoción una sola vez y controla su tope.
-        double millas = promociones.calcularMillas(nombrePromo, millasBase); // O(|L|)
+        double millas = aplicarPromocion(nombrePromo, millasBase); // O(|L|)
 
         u.acumular(millas); // O(1)
 
@@ -83,7 +82,33 @@ public class AirMiles implements SistemaAirMiles {
             maxAcumulador = u; // O(1)
         }
 
-        // Complejidad: O(log U + |L|)
+        // Complejidad: O(log U + |L|) y O(U + |L|) en el peor caso
+    }
+
+    private double aplicarPromocion(String nombrePromo, double millas) {
+        double res = millas;
+
+        //Si no está devuelve res = millas, o sea factor 1.0
+        if(promociones.esta(nombrePromo)){
+            Promocion promo = promociones.obtener(nombrePromo);
+            double millasConPromo = millas * promo.factor();
+    
+            if (promo.tieneTope()) {
+                if (millasConPromo <= promo.cupo()) {
+                    res = millasConPromo;
+                    promo.restarCupo(res);
+                }
+    
+                if(promo.cupo() == 0) {
+                    promociones.borrar(nombrePromo);
+                }
+            } else {
+                res = millasConPromo;
+            }
+        } 
+        return res;
+
+        //Complejidad: O(|L|)
     }
 
     public void canjearMillas(int id, double cantidad) {
@@ -178,7 +203,7 @@ public class AirMiles implements SistemaAirMiles {
         int cantidad = Math.min(n, heapMillas.tamanio());
         ArrayList<Usuario> aux = heapMillas.primeros(cantidad);
         int[] ranking = new int[cantidad];
-        for(int i = 0;i < cantidad;i++) {
+        for (int i = 0; i < cantidad; i++) {
             int id = aux.get(i).id();
             ranking[i] = id;
         }
@@ -188,15 +213,17 @@ public class AirMiles implements SistemaAirMiles {
     }
 
     public void iniciarPromocion(String nombre, double factor) {
-        promociones.insertar(nombre, factor); // O(|L|)
+        Promocion promo = new Promocion(factor);
+        promociones.definir(nombre, promo); // O(|L|)
     }
 
     public void iniciarPromocionConTope(String nombre, double factor, double tope) {
-        promociones.insertarConTope(nombre, factor, tope); // O(|L|)
+        Promocion promo = new Promocion(factor,tope);
+        promociones.definir(nombre, promo); // O(|L|)
     }
 
     public void finalizarPromocion(String nombre) {
-        promociones.eliminar(nombre); // O(|L|)
+        promociones.borrar(nombre); // O(|L|)
     }
 
     public int elMasAcumulador() {

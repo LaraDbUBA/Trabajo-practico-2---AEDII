@@ -24,7 +24,7 @@ public class Relacion implements Comparable<Relacion> {
     }
 
     public int otro(int id) {
-        //requiere: id == idMayor || id == idMenor
+        //requiere: id == this.obtenerIdMayor() || id == this.obtenerIdMenor()
         int id_otro;
         if(idMayor == id) {
             id_otro = idMenor;

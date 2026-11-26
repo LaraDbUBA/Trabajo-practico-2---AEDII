@@ -1,16 +1,10 @@
 package aed.tp2;
 
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.BeforeEach;
 import static org.junit.jupiter.api.Assertions.*;
 
+// Tests solo de Relacion. 
 public class RelacionTests {
-    private ListaEnlazada<Relacion> pares;
-
-    @BeforeEach
-    void setUp() {
-        pares = new ListaEnlazada<>();
-    }
 
     @Test
     void relacionNormalizaElOrdenDeLosIds() {
@@ -25,6 +19,14 @@ public class RelacionTests {
     }
 
     @Test
+    void otroDevuelveLaOtraPuntaDelPar() {
+        // AirMiles lo usa para encontrar a la ex-pareja cuando se rompe un par
+        Relacion r = new Relacion(7, 3);
+        assertEquals(3, r.otro(7));
+        assertEquals(7, r.otro(3));
+    }
+
+    @Test
     void compareToOrdenaPorIdMenorYLuegoPorIdMayor() {
         // (3, 7) y (7, 3) representan el mismo par
         assertEquals(0, new Relacion(3, 7).compareTo(new Relacion(7, 3)));
@@ -35,53 +37,5 @@ public class RelacionTests {
         // Con el mismo id menor, decide el id mayor: (2, 3) < (2, 5)
         assertTrue(new Relacion(2, 3).compareTo(new Relacion(2, 5)) < 0);
         assertTrue(new Relacion(2, 5).compareTo(new Relacion(2, 3)) > 0);
-    }
-
-    @Test
-    void eliminarParDelMedioPorHandle() {
-        pares.agregarAtras(new Relacion(1, 2));
-        Handle<Relacion> h34 = pares.agregarAtras(new Relacion(3, 4));
-        pares.agregarAtras(new Relacion(5, 6));
-        assertEquals(3, pares.longitud());
-
-        // Se rompe la exclusividad de (3, 4): se elimina en O(1) con su handle
-        h34.eliminar();
-
-        // Los otros pares quedan, en el mismo orden
-        assertEquals(2, pares.longitud());
-        assertEquals(1, pares.obtener(0).obtenerIdMenor());
-        assertEquals(5, pares.obtener(1).obtenerIdMenor());
-    }
-
-    @Test
-    void eliminarPrimerYUltimoParPorHandle() {
-        Handle<Relacion> h12 = pares.agregarAtras(new Relacion(1, 2));
-        pares.agregarAtras(new Relacion(3, 4));
-        Handle<Relacion> h56 = pares.agregarAtras(new Relacion(5, 6));
-
-        // Eliminar los extremos de la lista
-        h12.eliminar();
-        h56.eliminar();
-        assertEquals(1, pares.longitud());
-        assertEquals(3, pares.obtenerPrimero().obtenerIdMenor());
-        assertEquals(3, pares.obtenerUltimo().obtenerIdMenor());
-
-        // Después de eliminar los extremos se puede seguir agregando pares
-        pares.agregarAtras(new Relacion(7, 8));
-        assertEquals(2, pares.longitud());
-        assertEquals(7, pares.obtenerUltimo().obtenerIdMenor());
-    }
-
-    @Test
-    void eliminarDosVecesElMismoHandleNoRompeLaLista() {
-        // En AirMiles los dos usuarios del par comparten el mismo handle
-        Handle<Relacion> h12 = pares.agregarAtras(new Relacion(1, 2));
-        pares.agregarAtras(new Relacion(3, 4));
-
-        h12.eliminar();
-        h12.eliminar(); // segunda vez: no tiene que eliminar otro par
-
-        assertEquals(1, pares.longitud());
-        assertEquals(3, pares.obtenerPrimero().obtenerIdMenor());
     }
 }

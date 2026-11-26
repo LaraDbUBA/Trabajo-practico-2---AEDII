@@ -5,72 +5,98 @@ import org.junit.jupiter.api.BeforeEach;
 import static org.junit.jupiter.api.Assertions.*;
 
 public class TrieTests {
-    private Trie trie;
+    // Probamos el Trie genérico con promociones, como lo usa AirMiles
+    private Trie<Promocion> trie;
 
     @BeforeEach
     void setUp() {
-        trie = new Trie();
+        trie = new Trie<>();
     }
 
     @Test
-    void promocionQueEsPrefijoDeOtra() {
-        trie.insertar("PromoVerano", 2.0);
+    void claveQueEsPrefijoDeOtra() {
+        trie.definir("PromoVerano", new Promocion(2.0));
 
-        // El camino P-R-O-M-O existe, pero ahí no termina ninguna promoción
-        assertTrue(trie.existe("PromoVerano"));
-        assertFalse(trie.existe("Promo"));
-        assertFalse(trie.existe("PromoVeranoLargo"));
+        // El camino P-R-O-M-O existe, pero ahí no termina ninguna clave
+        assertTrue(trie.esta("PromoVerano"));
+        assertFalse(trie.esta("Promo"));
+        assertFalse(trie.esta("PromoVeranoLargo"));
+        assertFalse(trie.esta("Otra"));
 
-        // Al insertar el prefijo como promoción, cada una conserva su factor
-        trie.insertar("Promo", 3.0);
-        assertTrue(trie.existe("Promo"));
-        assertEquals(3.0, trie.obtenerFactor("Promo"));
-        assertEquals(2.0, trie.obtenerFactor("PromoVerano"));
+        // Al definir el prefijo como clave, cada una conserva su valor
+        trie.definir("Promo", new Promocion(3.0));
+        assertTrue(trie.esta("Promo"));
+        assertEquals(3.0, trie.obtener("Promo").factor());
+        assertEquals(2.0, trie.obtener("PromoVerano").factor());
     }
 
     @Test
-    void topeSeConsumeGlobalmente() {
-        trie.insertarConTope("Flash", 3.0, 300);
+    void definirUnaClaveExistentePisaElValor() {
+        trie.definir("PromoVerano", new Promocion(2.0));
+        trie.definir("PromoVerano", new Promocion(4.0));
+        assertEquals(4.0, trie.obtener("PromoVerano").factor());
 
-        // Dos acumulaciones bajo la misma promoción comparten el tope: 150 + 150 = 300
-        assertEquals(150.0, trie.calcularMillas("Flash", 50));
-        assertEquals(150.0, trie.calcularMillas("Flash", 50));
-
-        // Tope alcanzado: ya no se aplica el factor de la promoción
-        assertEquals(10.0, trie.calcularMillas("Flash", 10));
+        // Una promoción con tope reiniciada arranca con el tope nuevo
+        trie.definir("Flash", new Promocion(3.0, 300));
+        trie.obtener("Flash").restarCupo(300);
+        trie.definir("Flash", new Promocion(2.0, 200));
+        assertEquals(200.0, trie.obtener("Flash").cupo());
     }
 
     @Test
-    void reiniciarPromocionConElMismoNombre() {
-        // Promoción sin tope: al finalizarla deja de aplicar su factor
-        trie.insertar("PromoVerano", 2.0);
-        trie.eliminar("PromoVerano");
-        assertEquals(100.0, trie.calcularMillas("PromoVerano", 100));
+    void borrarYVolverADefinir() {
+        trie.definir("PromoVerano", new Promocion(2.0));
+        trie.borrar("PromoVerano");
+        assertFalse(trie.esta("PromoVerano"));
 
-        // Se vuelve a iniciar con el mismo nombre y otro factor
-        trie.insertar("PromoVerano", 4.0);
-        assertEquals(400.0, trie.calcularMillas("PromoVerano", 100));
-
-        // Promoción con tope agotado: al reiniciarla el tope arranca de cero
-        trie.insertarConTope("Flash", 3.0, 300);
-        assertEquals(300.0, trie.calcularMillas("Flash", 100));
-        trie.insertarConTope("Flash", 2.0, 200);
-        assertEquals(200.0, trie.calcularMillas("Flash", 100));
+        // Se vuelve a definir con el mismo nombre y otro valor
+        trie.definir("PromoVerano", new Promocion(4.0));
+        assertTrue(trie.esta("PromoVerano"));
+        assertEquals(4.0, trie.obtener("PromoVerano").factor());
     }
 
     @Test
-    void promocionesConPrefijoComunSonIndependientes() {
-        trie.insertar("NoPromo", 1.0);
-        trie.insertar("PromoDoble", 2.0);
-        trie.insertar("PromoTriple", 3.0);
+    void clavesConPrefijoComunSonIndependientes() {
+        trie.definir("PromoDoble", new Promocion(2.0));
+        trie.definir("PromoTriple", new Promocion(3.0));
 
-        // Finalizar una promoción no afecta a otra que comparte el camino P-R-O-M-O
-        trie.eliminar("PromoDoble");
-        assertEquals(100.0, trie.calcularMillas("PromoDoble", 100));
-        assertEquals(300.0, trie.calcularMillas("PromoTriple", 100));
+        // Borrar una clave no afecta a otra que comparte el camino P-R-O-M-O
+        trie.borrar("PromoDoble");
+        assertFalse(trie.esta("PromoDoble"));
+        assertTrue(trie.esta("PromoTriple"));
+        assertEquals(3.0, trie.obtener("PromoTriple").factor());
+    }
 
-        // Una promoción sin tope no se agota: se puede usar muchas veces
-        assertEquals(300.0, trie.calcularMillas("PromoTriple", 100));
-        assertEquals(50.0, trie.calcularMillas("NoPromo", 50));
+    @Test
+    void borrarElPrefijoNoBorraLaClaveLargaYAlReves() {
+        trie.definir("Promo", new Promocion(2.0));
+        trie.definir("PromoVerano", new Promocion(3.0));
+
+        // Borrar la corta: la poda no puede llevarse el camino de la larga
+        trie.borrar("Promo");
+        assertFalse(trie.esta("Promo"));
+        assertTrue(trie.esta("PromoVerano"));
+
+        // Borrar la larga: la poda tiene que frenar en la corta
+        trie.definir("Promo", new Promocion(2.0));
+        trie.borrar("PromoVerano");
+        assertFalse(trie.esta("PromoVerano"));
+        assertTrue(trie.esta("Promo"));
+        assertEquals(2.0, trie.obtener("Promo").factor());
+    }
+
+    @Test
+    void aceptaTodosLosCaracteresDelAlfabeto() {
+        // Espacios, ñ, tildes, números y signos (antes solo se aceptaban letras A-Z)
+        trie.definir("Promo Año Nuevo 2027!", new Promocion(2.0));
+        trie.definir("Canción", new Promocion(3.0));
+        assertTrue(trie.esta("Promo Año Nuevo 2027!"));
+        assertEquals(3.0, trie.obtener("Canción").factor());
+        assertFalse(trie.esta("Cancion"));
+
+        // Mayúsculas y minúsculas son claves distintas
+        trie.definir("Flash", new Promocion(4.0));
+        assertTrue(trie.esta("Flash"));
+        assertFalse(trie.esta("flash"));
     }
 }

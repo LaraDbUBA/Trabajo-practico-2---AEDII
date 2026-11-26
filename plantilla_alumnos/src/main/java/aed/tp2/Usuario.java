@@ -78,13 +78,13 @@ public class Usuario implements Comparable<Usuario> {
     }
     
     public void canjear(double millas) {
-        // requiere: 0 < millas ≤ millasDisponibles
+        // requiere: 0 < millas ≤ this.disponibles()
         this.millasCanjeadas += millas;
         this.millasDisponibles -= millas;
     }
     
     public void transferir(double millas) {
-        // requiere: 0 < millas ≤ millasDisponibles
+        // requiere: 0 < millas ≤ this.disponibles()
         this.millasDisponibles -= millas;
         this.millasTransferidas += millas;
     }

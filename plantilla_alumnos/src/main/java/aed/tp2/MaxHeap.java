@@ -107,7 +107,7 @@ public class MaxHeap<T extends Comparable<T>> {
     }
 
     private Nodo sacarNodoMaximo() {
-        // requiere: datos.size() > 0
+        // requiere: datos.tamanio() > 0
 
         Nodo maximo = datos.get(0);
         Nodo ultimo = datos.remove(datos.size() - 1);
